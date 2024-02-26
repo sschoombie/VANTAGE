@@ -66,12 +66,12 @@ When successfully loaded a plot will appear showing the data.
 
 #### 2.2.1 First select the folder where the video files are located
 
-<i>File - Set video directory...</i>
+<i>Video - Set video directory...</i>
 
 ![VANTAGE_set_video_GitHub](https://github.com/sschoombie/VANTAGE/assets/49139080/a9ea123d-0cc7-4a41-977c-34a6d35c0869)
 
 #### 2.2.2 VERY IMPORTANT! If the video files are not .mp4 it should be converted
-<i>File - Convert video to mp4</i>
+<i>Video - Convert video to mp4</i>
 
 ![VANTAGE_Convert_video_GitHub](https://github.com/sschoombie/VANTAGE/assets/49139080/63c02fe3-4f76-4625-9eb2-1edab149117d)
 
@@ -80,12 +80,15 @@ This will convert the selected files to .mp4 at 25 frames per second while prese
 
 #### 2.2.3 Next select the video file to load
 
-<i>File - Load video...</i>
+<i>Video - Load video...</i>
 
 ![VANTAGE_load_video_GitHub](https://github.com/sschoombie/VANTAGE/assets/49139080/476a05c5-6e9b-4528-b246-5f19b0b5692a)
 
 ### If everything loaded correctly you will see the following screen:
-![Uploading Figure 1 - example panel.png…]()
+
+
+![VANTAGE_working_screen_GitHub](https://github.com/sschoombie/VANTAGE/assets/49139080/84842d34-4903-4ee1-b242-17943c80b119)
+
 
 ### 2.3 Synchronizing time
 
