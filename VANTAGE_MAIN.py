@@ -169,12 +169,12 @@ class App(tk.Tk):
         analysismenu.add_command(label = "Video squash", command = lambda:Menu_functions_ANALYSIS.squash_vid(self,IMU_dat)) #Video Squash
         analysismenu.add_command(label = "Sync dives (Manual)", command = lambda:Menu_functions_ANALYSIS.sync_dives_manual(self,IMU_dat)) #Find dives manual method
         analysismenu.add_command(label = "Sync dives (AUTO)", command = lambda:Menu_functions_ANALYSIS.synch_dives_auto(self,IMU_dat)) #Find dives manual method
-        analysismenu.add_command(label = "Navigate PCE events", command = lambda:Menu_functions_ANALYSIS.pce_navigate(self,IMU_dat)) #Export ALL PCE images
+        analysismenu.add_command(label = "Navigate events", command = lambda:Menu_functions_ANALYSIS.pce_navigate(self,IMU_dat)) #Export ALL PCE images
 
         #add a submenu under analysis menu
         analysis_submenu = tk.Menu(analysismenu,tearoff = 0)
         analysismenu.add_cascade(label = "CV filters",menu = analysis_submenu)
-        analysis_submenu.add_checkbutton(label = "Horison detect",variable = IMU_dat.horison_detect, command = lambda:Menu_functions_ANALYSIS.check_horison_column(self,IMU_dat))
+        analysis_submenu.add_checkbutton(label = "Horizon detect",variable = IMU_dat.horison_detect, command = lambda:Menu_functions_ANALYSIS.check_horison_column(self,IMU_dat))
 
         ###################
         # Annotate menu #
