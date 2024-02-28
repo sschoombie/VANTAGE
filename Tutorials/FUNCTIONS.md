@@ -1,4 +1,4 @@
-# FUNCTIONS found in the <i>Functions</i> menu
+# 3. FUNCTIONS found in the <i>Functions</i> menu
 
 ## Calculate ACC metrics
 This will calculate commonly used accelerometer metrics from raw tri-axial accelerometer data, where the user will be prompted to choose the correct columns.
