@@ -1582,8 +1582,8 @@ class Menu_functions_ANALYSIS(Data_Frame):
                          if dive_dur >= 20:
                              temp_data.dive = 1
                              #Mark as forage dive if pitch SD is
-                             if dive_pitch_sd >= 15:
-                                 temp_data.forage_dive = 1
+                             # if dive_pitch_sd >= 15:
+                             #     temp_data.forage_dive = 1
 
                          temp_data = temp_data.assign(d_depth = 0,
                                                        dt = 0)
@@ -1683,9 +1683,9 @@ class Menu_functions_ANALYSIS(Data_Frame):
                  else:
                      print("view only mode file not saved")
                  #Print the total number of foraging dives
-                 f_dives = dat.df.loc[dat.df["dive_pitch_sd"] > 15 ,:]
-                 n_f_dives = len(np.unique(f_dives['dive_num']))
-                 print("Total foraging dives: " + str(n_f_dives))
+                 # f_dives = dat.df.loc[dat.df["dive_pitch_sd"] > 15 ,:]
+                 # n_f_dives = len(np.unique(f_dives['dive_num']))
+                 # print("Total foraging dives: " + str(n_f_dives))
 
                  dat.dives_loaded = True
 
