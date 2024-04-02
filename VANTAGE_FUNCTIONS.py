@@ -1661,6 +1661,10 @@ class Menu_functions_ANALYSIS(Data_Frame):
          # pce_out.to_csv(out_file,index = False)
 
              if dat.bdives == True:
+                 #Get the accelerometer column names
+                 s_ax = dat.ax_col.get()
+                 s_ay = dat.ay_col.get()
+                 s_az = dat.az_col.get()
                  #Normalize acc values according to dives
                  max_X = np.max(dat.df.accX[dat.df.dive_max_depth >= 3])
                  min_X = np.min(dat.df.accX[dat.df.dive_max_depth >= 3])
