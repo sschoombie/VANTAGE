@@ -34,7 +34,7 @@ class Data_Frame:
         self.filename = "" #Path to INPUT file
         self.out_filename = ""   #Path to OUTPUT file
         self.col_names = ["None"]#Column names of the dataset
-        self.p_cols = [2,3,4,12] #Which columns should be plotted - Default is the order of the AxyTrek tags
+        self.p_cols = [2,3,4,5] #Which columns should be plotted - Default is the order of the AxyTrek tags
         self.time_col_string = "Timestamp"
         self.IMU_date = 0        #Flag to show if the date has been set
         self.smooth = 1          #Should the data be smoothed? 1- Yes, 0 - No
