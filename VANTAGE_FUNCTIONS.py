@@ -834,6 +834,8 @@ class Menu_functions_VIDEO(Data_Frame):
         for f in files:
             if (f.endswith(".mp4") or f.endswith(".mov")):
                 files_avi.append(f)
+
+        for f in files:
             if f == "vt.csv":
                 print("vt file already present")
                 self.vt_present = True
@@ -848,6 +850,27 @@ class Menu_functions_VIDEO(Data_Frame):
                 if (self.vt.set == 1).any():
                     print("date already set")
                     self.date_set = 1
+
+                #Update the vt file with any new video files
+                new_rows = []
+                for nf in files_avi:
+                    if nf not in self.vt['vid'].values:
+                        # Prepare a new row as a dictionary
+                        new_rows.append({'vid': nf, 'set': 0})
+
+                # Create a DataFrame from the new rows and concatenate it with the existing DataFrame
+                if new_rows:
+                    new_df = pd.DataFrame(new_rows)
+                    #Add NA values
+                    for col in self.vt:
+                        if col not in new_df.columns:
+                            new_df[col] = np.nan       
+                    self.vt = pd.concat([self.vt, new_df], ignore_index=True)
+                    self.vt = self.vt.sort_values(by='vid').reset_index(drop=True)
+                    self.vt.to_csv(foldername + "/vt.csv",index = False)
+                    print("vt file UPDATED")
+
+
         if self.vt_present ==False:
             vt = pd.DataFrame(columns = ("vid","vid_start_date","Timestamp","video_offset","set"))
             vt["vid"] = files_avi
