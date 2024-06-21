@@ -37,7 +37,10 @@ pip install scipy
 ```bash
 pip install ultralytics
 ```
-
+### Optional - FFmpeg for video conversion
+Installation of FFmpeg is only neccesary if you need to convert videos to mp4
+1. Download the latest version of [FFmpeg](https://ffmpeg.org/download.html)
+2. See these guides for installation on [Windows](https://www.geeksforgeeks.org/how-to-install-ffmpeg-on-windows/), [Linux](https://www.redswitches.com/blog/install-ffmpeg-on-ubuntu-and-linux/), or [Mac](https://phoenixnap.com/kb/ffmpeg-mac)
 
 ## 2. Running VANTAGE
 Make sure the following files are downloaded in the same directory:
