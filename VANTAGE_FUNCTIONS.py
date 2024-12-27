@@ -4305,7 +4305,9 @@ class Keyboard_functions(Data_Frame):
                 Button_functions.set_time(dat)
 
 
-            elif key == '1' or key =="2"  or key == '3' or key == '4'or key == '5'or key == '6'or key == '7'or key == '8'or key == '9' or key == '0':
+            elif key == '1' or key =="2"  or key == '3' or key == '4'or key == '5'or key == '6'or key == '7'or key == '8'or key == '9' or key == '0'or key == 'F1'or key == 'F1'or key == 'F2'or key == 'F3'or key == 'F4'or key == 'F5'or key == 'F6'or key == 'F7'or key == 'F8'or key == 'F9':
+                if key[0] == "F":
+                    key = "1" + key[1]
                 dat.key = key
                 Button_functions.annotate(self,dat)
                 # idx = (np.abs(dat.df.iloc[:,dat.time_col] - dat.frame_date)).argmin() #Find the row in the df with the nearest value to ipick
