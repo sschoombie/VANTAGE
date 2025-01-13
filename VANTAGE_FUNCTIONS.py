@@ -4491,12 +4491,13 @@ class Keyboard_functions(Data_Frame):
             while (dat.frame < frame_count and dat.playing == True):
     ##                    print(dat.frame)
                 dat.frame = dat.frame + 1
-                dat.vid.set(1,dat.frame)
+                # dat.vid.set(1,dat.frame)
                 Keyboard_functions.plot_frame(self,dat)#dat.plot_frame() #Plot the selected image
                 self.update()
 
                 dat.sub_max = dat.sub_max + 1
                 dat.sub_min = dat.sub_min + 1
+            dat.tbar.set(dat.frame)
             dat.playing = False
         else:
             dat.playing = False
@@ -4632,7 +4633,7 @@ class Keyboard_functions(Data_Frame):
         # s, image = self.vid.read()
         #Copythe image to allow YOLO model prediction
         yolo_image = image.copy()
-        dat.tbar.set(dat.frame)
+        # dat.tbar.set(dat.frame)
 
         blur1 = dat.blur1.get()
         if(blur1 % 2 == 0):
