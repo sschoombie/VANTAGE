@@ -115,6 +115,10 @@ This will convert the selected files to .mp4 at 25 frames per second while prese
 
  ![Figure 5 - YOLO](https://github.com/sschoombie/VANTAGE/assets/49139080/d3ec5742-db52-4c7b-9e85-f961da9d50d6)
 
+ - Horizon detection for flying seabirds
+
+![VANTAGE_horizon_GitHub](https://github.com/user-attachments/assets/d16415ee-1b6f-403c-86b9-98a99c4d38d0)
+
 
 
 
