@@ -1064,7 +1064,7 @@ class Menu_functions_PLOT(Data_Frame):
         dat.ax_main = dat.figure_main.add_subplot()
         # print(dat.nrow)
 
-        i_int = dat.nrow/2000
+        i_int = round(dat.nrow/2000)
         #Specificy the rows to plot
         row_to_use = np.arange(0,(dat.nrow),i_int)
         # Plot each column individually
@@ -4339,7 +4339,7 @@ class Keyboard_functions(Data_Frame):
 
             elif key == 'y':
                 print("axes reset")
-                i_int = dat.nrow/2000
+                i_int = round(dat.nrow/2000)
                 #Specificy the rows to plot
                 row_to_use = np.arange(0,(dat.nrow),i_int)
                 # Plot each column individually
