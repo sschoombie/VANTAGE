@@ -1,7 +1,6 @@
 #TO-DO 2024-2-10
 # - Add a function to choose the label name
 # - Export all columns if more than one label column is specified - currently only 'current_label_col' will be exported.
-# - Figure out why video playback is so slow?!
 #add menu entry to load a folder and automatically load all the data.
 #Modify so that only video can be loaded and exported as a df
 
