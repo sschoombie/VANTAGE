@@ -1,6 +1,7 @@
 # VANTAGE (Visualization and analysis of video and time-series data from animal-borne loggers)
 
 VANTAGE is a graphical user interface written in Python that enables users to simultaneosly view VIDEO and TIME-SERIES data. 
+For more information please see the ![journal article](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.70026) published in Methods in Ecology and Evolution.
 
 The main function of VANTAGE is for temporal synchronization of time-series and video data with concurrent visualization and navigation, which allows effecient labelling of the data.
 
