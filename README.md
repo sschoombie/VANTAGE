@@ -24,6 +24,11 @@ The older opencv version does not support Numpy v2 - so we need to install v1.xx
 ```bash
 pip install "numpy<2"
 ```
+### UTC library
+Install pytz package for UTC timestamps
+```bash
+pip install pytz
+```
 
 ### Pandas for data frames
 ```bash
