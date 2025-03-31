@@ -883,9 +883,7 @@ class Menu_functions_VIDEO(Data_Frame):
             self.vt_present = True
     def convert_video(self,dat):
         #Choose files to convert to MP4
-        video_file_types = (('AVI files', '*.avi'),('MOV files', '*.mov'),('MKV files', '*.mkv'),
-                            ('WMV files', '*.wmv'),('FLV files', '*.flv'),('WebM files', '*.webm'),
-                            ('MPEG files', '*.mpeg;*.mpg'),('All files', '*.*'))
+        video_file_types = (('AVI files', '*.avi'),('All files', '*.*'))
         filename = fd.askopenfilename(
                     title='Select video file(s)',
                     multiple = True,
