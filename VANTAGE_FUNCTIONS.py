@@ -1682,23 +1682,24 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
              if dat.bdives == True:
                  #Get the accelerometer column names
-                 s_ax = dat.ax_col.get()
-                 s_ay = dat.ay_col.get()
-                 s_az = dat.az_col.get()
+                 #s_ax = dat.ax_col.get()
+                 #s_ay = dat.ay_col.get()
+                 #s_az = dat.az_col.get()
                  #Normalize acc values according to dives
-                 max_X = np.max(dat.df.accX[dat.df.dive_max_depth >= 3])
-                 min_X = np.min(dat.df.accX[dat.df.dive_max_depth >= 3])
-                 max_Y = np.max(dat.df.accY[dat.df.dive_max_depth >= 3])
-                 min_Y = np.min(dat.df.accY[dat.df.dive_max_depth >= 3])
-                 max_Z = np.max(dat.df.accZ[dat.df.dive_max_depth >= 3])
-                 min_Z = np.min(dat.df.accZ[dat.df.dive_max_depth >= 3])
+                 #max_X = np.max(dat.df.accX[dat.df.dive_max_depth >= 3])
+                 #min_X = np.min(dat.df.accX[dat.df.dive_max_depth >= 3])
+                 #max_Y = np.max(dat.df.accY[dat.df.dive_max_depth >= 3])
+                 #min_Y = np.min(dat.df.accY[dat.df.dive_max_depth >= 3])
+                 #max_Z = np.max(dat.df.accZ[dat.df.dive_max_depth >= 3])
+                 #min_Z = np.min(dat.df.accZ[dat.df.dive_max_depth >= 3])
 
-                 dat.df['accX_norm_dive'] = -1 + (dat.df.accX - min_X) * (1 - (-1)) / (max_X - min_X)
-                 dat.df['accY_norm_dive'] = -1 + (dat.df.accY - min_Y) * (1 - (-1)) / (max_Y - min_Y)
-                 dat.df['accZ_norm_dive'] = -1 + (dat.df.accZ - min_Z) * (1 - (-1)) / (max_Z - min_Z)
+                 #dat.df['accX_norm_dive'] = -1 + (dat.df.accX - min_X) * (1 - (-1)) / (max_X - min_X)
+                 #dat.df['accY_norm_dive'] = -1 + (dat.df.accY - min_Y) * (1 - (-1)) / (max_Y - min_Y)
+                 #dat.df['accZ_norm_dive'] = -1 + (dat.df.accZ - min_Z) * (1 - (-1)) / (max_Z - min_Z)
 
                  dat.df.loc[~np.isnan(dat.df['dive_num']), 'dive_id'] = dat.df.loc[~np.isnan(dat.df['dive_num']), 'TagID'] + '_' + dat.df.loc[~np.isnan(dat.df['dive_num']), 'dive_num'].astype(int).astype(str)
-                 col_select = ["dive","dive_id","accX_norm_dive","accY_norm_dive","accZ_norm_dive","forage_dive", "dpoint","d_rate", "dive_num", "dive_pitch_sd","first_pce_pitch", "dive_max_depth", "dive_dur",  "dive_max_temp", "forage", "dive_behav", "dive_behav2"]
+                 #col_select = ["dive","dive_id","accX_norm_dive","accY_norm_dive","accZ_norm_dive","forage_dive", "dpoint","d_rate", "dive_num", "dive_pitch_sd","first_pce_pitch", "dive_max_depth", "dive_dur",  "dive_max_temp", "forage", "dive_behav", "dive_behav2"]
+                 col_select = ["dive","dive_id","forage_dive", "dpoint","d_rate", "dive_num", "dive_pitch_sd","first_pce_pitch", "dive_max_depth", "dive_dur",  "dive_max_temp", "forage", "dive_behav", "dive_behav2"]
 
 
                  if dat.view_only == False:
