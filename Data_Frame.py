@@ -34,7 +34,7 @@ class Data_Frame:
         self.filename = "" #Path to INPUT file
         self.out_filename = ""   #Path to OUTPUT file
         self.col_names = ["None"]#Column names of the dataset
-        self.p_cols = [2,3,4,5] #Which columns should be plotted - Default is the order of the AxyTrek tags
+        self.p_cols = [2,3,4,12] #Which columns should be plotted - Default is the order of the AxyTrek tags
         self.time_col_string = "Timestamp"
         self.IMU_date = 0        #Flag to show if the date has been set
         self.smooth = 1          #Should the data be smoothed? 1- Yes, 0 - No
@@ -42,6 +42,7 @@ class Data_Frame:
         #Basic data navigation
         self.sub_min = sub_min  #Pointer to the FIRST datapoint to be plotted
         self.sub_max = sub_max  #Pointer to the LAST datapoint to be plotted
+        self.zoom_idx = -1      #Pointer to the selected data point (green line - middle mouse button)
         self.zoom_ipick = 0     #Holder for a point selected by the user
         self.zoom_int = 1       #Interval for plots (i.e. interval between points - this will increase with more data to assist plotting)
         self.current_label_col = "PCE"
@@ -336,7 +337,7 @@ class Data_Frame:
 
         # self.ax_zoom.plot(self.df.iloc[np.arange(self.sub_min,self.sub_max,self.zoom_int),self.time_col],self.df.iloc[np.arange(self.sub_min,self.sub_max,self.zoom_int),self.p_cols],label = self.df.iloc[:,self.p_cols].columns) #Plot new values
         self.ax_zoom.legend(loc='center left', bbox_to_anchor=(0.9, 0.5))
-        self.vline3 = self.ax_zoom.axvline(x = ipick,color = 'green')
+        # self.vline3 = self.ax_zoom.axvline(x = ipick,color = 'green')
         self.figure_zoom.canvas.draw() #Redraw the figure
 
     def zoom_zoom(self,event):
@@ -396,6 +397,7 @@ class Data_Frame:
             self.sub_min = idx -50
             self.sub_max = idx + 50
             self.zoom_ipick = ipick
+            self.zoom_idx = idx
 ##            frame_num = int(frame_count*id_perc)
 ##            image = plotframe(frame_num)
 ##            panel.configure(image = image)
@@ -443,9 +445,9 @@ class Data_Frame:
 
         # self.ax_zoom.plot(self.df.iloc[np.arange(self.sub_min,self.sub_max,self.zoom_int),self.time_col],self.df.iloc[np.arange(self.sub_min,self.sub_max,self.zoom_int),self.p_cols],label = self.df.iloc[:,self.p_cols].columns) #Plot new values
         self.ax_zoom.legend(loc='center left', bbox_to_anchor=(0.9, 0.5))
-        # if(self.zoom_ipick < self.sub_max and self.zoom_ipick > self.sub_min):
-        #     self.vline3 = self.ax_zoom.axvline(x = self.zoom_ipick,color = 'green')
-        self.vline3 = self.ax_zoom.axvline(x = self.zoom_ipick,color = 'green')
+        if(self.zoom_idx > -1 and self.zoom_idx < self.sub_max and self.zoom_idx > self.sub_min):
+            self.vline3 = self.ax_zoom.axvline(x = self.zoom_ipick,color = 'green')
+        # self.vline3 = self.ax_zoom.axvline(x = self.zoom_ipick,color = 'green')
         if(self.dive_max < self.sub_max and self.dive_max > self.sub_min):
             self.vline4 = self.ax_zoom.axvline(x = self.dive_max_ipick,color = 'blue')
         if(self.dive_min < self.sub_max and self.dive_min > self.sub_min):
