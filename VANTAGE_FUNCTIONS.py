@@ -3,6 +3,9 @@
 # - Export all columns if more than one label column is specified - currently only 'current_label_col' will be exported.
 #add menu entry to load a folder and automatically load all the data.
 #Modify so that only video can be loaded and exported as a df
+#2025-10-09 Add a function to load MOV files without transforming
+#Add function to load CATS tag data without formatting
+#Fix sqaushed image with long videos (> 1 hr)
 
 try:
     import cPickle as pickle
@@ -276,6 +279,10 @@ class Menu_functions_FILE(Data_Frame):
             except:
                 pass
 
+            #Add the first data entry as IMU_date
+            array = dat.df.iloc[:,dat.time_col]                  #Define the numeric date column as an array
+            dat.IMU_date = array[0]
+            print(dat.IMU_date)
             #Plot the data
             Menu_functions_PLOT.plot_dat(self, dat)
 
@@ -863,8 +870,20 @@ class Menu_functions_VIDEO(Data_Frame):
                     #Add NA values
                     for col in self.vt:
                         if col not in new_df.columns:
-                            new_df[col] = np.nan       
+                            new_df[col] = np.nan
                     self.vt = pd.concat([self.vt, new_df], ignore_index=True)
+                    print(f"Added {len(new_rows)} new file(s)")
+                    self.vt = self.vt.sort_values(by='vid').reset_index(drop=True)
+                    self.vt.to_csv(foldername + "/vt.csv",index = False)
+                    print("vt file UPDATED")
+
+                # find rows in vt that are not present in files_avi anymore
+                removed_files = self.vt[~self.vt['vid'].isin(files_avi)]
+
+                if not removed_files.empty:
+                    self.vt = self.vt[self.vt['vid'].isin(files_avi)].reset_index(drop=True)
+                    print(f"Removed {len(removed_files)} missing file(s):")
+                    print(removed_files['vid'].tolist())
                     self.vt = self.vt.sort_values(by='vid').reset_index(drop=True)
                     self.vt.to_csv(foldername + "/vt.csv",index = False)
                     print("vt file UPDATED")
