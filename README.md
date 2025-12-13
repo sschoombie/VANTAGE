@@ -9,6 +9,7 @@ The software was developed for use with data collected from krill-feeding pengui
 
 ![VANTAGE_example_GitHub](https://github.com/sschoombie/VANTAGE/assets/49139080/e9be375d-1d1c-4ee8-b3dc-e74a0e1a0d43)
 
+## NB - ONLY USE Python version <= 3.11
 
 ## 1. Installation 
 A couple of python libraries have to be installed for VANTAGE to run.
@@ -18,10 +19,6 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install the fol
 The latest version of OpenCV has bug when reading the frame rate - so we load a previous stable version
 ```bash
 pip install opencv-contrib-python==4.7.0.72
-```
-NOTE - newer versions of Python you need to type 
-```bash
-py -m pip install opencv-contrib-python==4.7.0.72
 ```
 ### Numpy
 The older opencv version does not support Numpy v2 - so we need to install v1.xx
