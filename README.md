@@ -19,6 +19,10 @@ The latest version of OpenCV has bug when reading the frame rate - so we load a 
 ```bash
 pip install opencv-contrib-python==4.7.0.72
 ```
+NOTE - newer versions of Python you need to type 
+```bash
+py -m pip install opencv-contrib-python==4.7.0.72
+```
 ### Numpy
 The older opencv version does not support Numpy v2 - so we need to install v1.xx
 ```bash
