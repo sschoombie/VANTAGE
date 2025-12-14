@@ -900,6 +900,117 @@ class Menu_functions_VIDEO(Data_Frame):
             print("vt file created")
             self.vt = vt
             self.vt_present = True
+
+    #2025-10-10 - Added this for videos from CATS tags with broken indexing in the MOV file
+    def fix_video_index(self,dat):
+        #Choose files to convert to MP4
+        video_file_types = (('MOV files', '*.mov'),('All files', '*.*'))
+        filename = fd.askopenfilename(
+                    title='Select video file(s)',
+                    multiple = True,
+                    filetypes = video_file_types
+                    )
+
+        #Make sure you want to continue with all the files
+        res = tk.messagebox.askyesno("Video convert",f"{len(filename)} files selected. Continue?")
+        if res:
+            dat.bfix_index = True
+            #Loop through all the files and convert them using ffmpeg
+            fcount = 0
+            for vfile in filename:
+                fcount += 1
+                if dat.bfix_index == False:
+                    break
+                #We make a temporary window to show the user that something is happening
+                wvc = tk.Toplevel(self)
+                wvc.title("Fixing broken indexing")
+                wvc.geometry("400x200")
+                label1 = tk.Label(wvc, text="Please wait - this may take a while")  # create the label
+                label1.pack()  # add the label to the window
+                label2 = tk.Label(wvc, text=f"Busy with file {fcount}/{len(filename)} ")  # create the label
+                label2.pack()  # add the label to the window
+                def fcancel(self,dat):
+                    dat.bfix_index = False
+                    wvc.destroy()
+                #Place a cancel button
+                btn_close = tk.Button(wvc,text = "Cancel",command = lambda:fcancel(self,dat))
+                btn_close.pack()
+
+                #Initiate the progress bar
+                pbvc = ttk.Progressbar(
+                 wvc,
+                 orient='horizontal',
+                 mode='determinate',
+                 length=100
+                 # value = 0
+                 )
+                pbvc.pack()
+
+                #NExt we load the input file and make sure to read the creation date
+                #Preserving the creation date is important for time keeping
+                input_video = vfile
+
+                #Read the video
+                vid = cv2.VideoCapture(input_video)
+                #Get the frame rate and count
+                fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
+                frame_count = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
+                #Get the last modified date (i.e. the saved time)
+                vid_last_date = os.path.getmtime(input_video) #Read file creation date (this is the date at the end of the clip) and covert to POSIX
+                #Convert to a datetime object and subtract the total video duration (in seconds) - this gives the creation time
+                creation_time = datetime.fromtimestamp(vid_last_date -(frame_count/fps))
+                #Output file name
+                # output_video = input_video.split(".")[0] + ".mp4"
+                name, ext = os.path.splitext(vfile)
+                indexed_file = f"{name}_indexed{ext}"
+
+                #Next we use ffmpeg to fix the indexing
+                ffmpeg_command = [
+                    "ffmpeg", "-y",
+                    "-i", input_video,
+                    "-c", "copy",
+                    "-map", "0",
+                    "-movflags", "+faststart",
+                     "-metadata", f"creation_time={creation_time}",
+                    indexed_file
+                ]
+
+                try:
+                    #Initialise the process to run in the background
+                    bg_process = subprocess.Popen(ffmpeg_command)
+
+                    #Counters for the progressbar
+                    i_wait = 0
+                    b_up = True
+
+                    #Keep moving the progressbar up and down until the process is done
+                    while(bg_process.poll() is None):
+                        #Update the window
+                        wvc.update_idletasks()
+                        self.update()
+
+                        pbvc['value'] = i_wait * 10
+                        if b_up:
+                            i_wait += 1
+                            if i_wait > 10:
+                                b_up = False
+                        else:
+                            i_wait -= 1
+                            if i_wait < 0:
+                                b_up = True
+                        time.sleep(0.05)
+
+                    pbvc.destroy()
+                    wvc.destroy()
+
+                    print("Indexing successful.")
+                except subprocess.CalledProcessError as e:
+                    print("Indexing failed:", e)
+
+        else:
+            pass
+    #END fix_video_index
+
     def convert_video(self,dat):
         #Choose files to convert to MP4
         video_file_types = (('AVI files', '*.avi'),('All files', '*.*'))
@@ -921,7 +1032,7 @@ class Menu_functions_VIDEO(Data_Frame):
                     break
                 #We make a temporary window to show the user that something is happening
                 wvc = tk.Toplevel(self)
-                wvc.title("Finding dives")
+                wvc.title("MP4 Conversion")
                 wvc.geometry("400x200")
                 label1 = tk.Label(wvc, text="Please wait - this may take a while")  # create the label
                 label1.pack()  # add the label to the window
@@ -4300,10 +4411,12 @@ class Keyboard_functions(Data_Frame):
         # print(key)
         if dat.video_loaded == False and key != "z" and key != "x":
             print("please load video first")
-        elif dat.date_set == 0 and key != 's' and key != "space" and key != "r" and key != "right" and key != "n" and key != "b" and key !="left" and key != "z" and key != "x":
+        elif dat.date_set == 0 and key != 's' and key != "space" and key != "r" and key != "right" and key != "n" and key != "b" and key !="left" and key != "z" and key != "x" and key != "shift":
             # print(key)
             print("please synch the video first")
         else:
+            if key == "shift":
+                print("press left mouse button to mark point for SYNC")
             if key == "j":
                 "jump to selected frame"
 ##                print(dat.frame)

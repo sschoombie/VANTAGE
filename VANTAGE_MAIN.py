@@ -19,7 +19,7 @@ from Data_Frame import Data_Frame, DebugWindow
 from VANTAGE_FUNCTIONS import *#Menu_functions, Menu_functions_FILE
 
 #Version number
-vnum = "_1.01"
+vnum = "_1.02"
 
 class App(tk.Tk):
     def __init__(self):
@@ -133,6 +133,8 @@ class App(tk.Tk):
         videomenu.add_command(label="Load video...", command=lambda:Menu_functions_VIDEO.load_avi(self,IMU_dat))
         videomenu.add_command(label="Set video directory...", command=lambda:Menu_functions_VIDEO.save_wd(IMU_dat))
         videomenu.add_command(label = "Convert video to mp4", command = lambda: Menu_functions_VIDEO.convert_video(self,IMU_dat))
+        videomenu.add_command(label = "Fix MOV indexing", command = lambda: Menu_functions_VIDEO.fix_video_index(self,IMU_dat))
+
         videomenu.add_command(label="Load wav...", command=lambda:Menu_functions_VIDEO.load_audio(self,IMU_dat))
         ###############
         # Filter menu #

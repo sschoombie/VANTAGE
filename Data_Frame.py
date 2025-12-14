@@ -371,7 +371,7 @@ class Data_Frame:
                 self.dive_max_ipick = dive_max_ipick_hold
 
 
-        elif event.button == 1: #LEFT
+        elif event.button == 1 and event.key != 'shift': #LEFT
             array = self.df.iloc[:,self.time_col]                  #Define the numeric date column as an array
 ##                ipick = (event.xdata)                  #when mouse is clicked, x-coordinate is saved
             ipick = mdates.num2date(event.xdata,utc)
@@ -392,7 +392,7 @@ class Data_Frame:
                 self.dive_min_ipick = dive_min_ipick_hold
 
 
-        elif event.button == 2:
+        elif event.button == 2 or (event.button == 1 and event.key == 'shift'):
             self.IMU_date = array[idx]
             self.sub_min = idx -50
             self.sub_max = idx + 50
