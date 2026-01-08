@@ -1,1 +1,1 @@
-2025-12-07 22:17:13.551000+00:00E:/Ardley/data/P006_2526/AX_2581_20251209.csvE:/Ardley/data/P006_2526/AX2581/MOVI0017.mp42884
+2022-01-07 11:33:37.200000+00:00C:/Users/SStho/Documents/GitHub/VANTAGE/Example_data/2022_bird03/data/2022_bird03.csvC:/Users/SStho/Documents/GitHub/VANTAGE/Example_data/2022_bird03/video/2022_bird03_video_01.mp4156

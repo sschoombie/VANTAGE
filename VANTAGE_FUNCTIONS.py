@@ -4411,13 +4411,13 @@ class Keyboard_functions(Data_Frame):
         # print(key)
         if dat.video_loaded == False and key != "z" and key != "x":
             print("please load video first")
-        elif dat.date_set == 0 and key != 's' and key != "space" and key != "r" and key != "right" and key != "n" and key != "b" and key !="left" and key != "z" and key != "x" and key != "shift":
+        elif dat.date_set == 0 and key != 's' and key != "space" and key != "r" and key != "right" and key != "n" and key != "b" and key !="left" and key != "z" and key != "x" and key != "Shift_L":
             # print(key)
             print("please synch the video first")
         else:
-            if key == "shift":
+            if key == "Shift_L":
                 print("press left mouse button to mark point for SYNC")
-            if key == "j":
+            elif key == "j":
                 "jump to selected frame"
 ##                print(dat.frame)
                 dat.frame = dat.frame + (dat.IMU_date - dat.frame_date).total_seconds()*dat.fps
