@@ -519,10 +519,16 @@ class Data_Frame:
                 self.vline5 = self.ax_zoom.axvline(x = self.dive_min_ipick,color = 'red')
             self.figure_zoom.canvas.draw()
 
-            self.vline1.remove()
+            try:
+                self.vline1.remove()
+            except:
+                pass
             self.vline1 = self.ax_main.axvline(x = self.df.iloc[self.sub_min,self.time_col],color = 'red')
             self.figure_main.canvas.draw()
-            self.vline2.remove()
+            try:
+                self.vline2.remove()
+            except:
+                pass
             self.vline2 = self.ax_main.axvline(x = self.df.iloc[self.sub_max,self.time_col],color = 'red')
             self.figure_main.canvas.draw()
 
@@ -562,10 +568,16 @@ class Data_Frame:
                 self.vline5 = self.ax_zoom.axvline(x = self.dive_min_ipick,color = 'red')
             self.figure_zoom.canvas.draw()
 
-            self.vline1.remove()
+            try:
+                self.vline1.remove()
+            except:
+                pass
             self.vline1 = self.ax_main.axvline(x = self.df.iloc[self.sub_min,self.time_col],color = 'red')
     ##                    figure_main.canvas.draw()
-            self.vline2.remove()
+            try:
+                self.vline2.remove()
+            except:
+                pass
             self.vline2 = self.ax_main.axvline(x = self.df.iloc[self.sub_max,self.time_col],color = 'red')
             self.figure_main.canvas.draw()
 
