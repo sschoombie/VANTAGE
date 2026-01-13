@@ -2535,7 +2535,10 @@ class Menu_functions_ANALYSIS(Data_Frame):
 ##            image = plotframe(frame_num)
 ##            panel.configure(image = image)
 ##            panel.image = image
-            dat.vline3.remove()
+            try:
+                dat.vline3.remove()
+            except:
+                pass
             dat.vline3 = dat.ax_zoom.axvline(x = ipick,color = 'green')
 
             dat.ax_zoom.cla() #Clear axes
@@ -4513,9 +4516,15 @@ class Keyboard_functions(Data_Frame):
                 if dat.sub_max > (dat.nrow):
                     dat.sub_max = (dat.nrow)
                     dat.sub_min = dat.sub_max - 100
-                dat.vline2.remove()
+                try:
+                    dat.vline2.remove()
+                except:
+                    pass
                 dat.vline2 = dat.ax_main.axvline(x = dat.df.iloc[dat.sub_max,dat.time_col],color = 'red')
-                dat.vline1.remove()
+                try:
+                    dat.vline1.remove()
+                except:
+                    pass
                 dat.vline1 = dat.ax_main.axvline(x = dat.df.iloc[dat.sub_min,dat.time_col],color = 'red')
                 dat.figure_main.canvas.draw()
 
@@ -4566,9 +4575,15 @@ class Keyboard_functions(Data_Frame):
                 if dat.sub_max < 0:
                     dat.sub_max = 100
                     dat.sub_min = 0
-                dat.vline2.remove()
+                try:
+                    dat.vline2.remove()
+                except:
+                    pass
                 dat.vline2 = dat.ax_main.axvline(x = dat.df.iloc[dat.sub_max,dat.time_col],color = 'red')
-                dat.vline1.remove()
+                try:
+                    dat.vline1.remove()
+                except:
+                    pass
                 dat.vline1 = dat.ax_main.axvline(x = dat.df.iloc[dat.sub_min,dat.time_col],color = 'red')
                 dat.figure_main.canvas.draw()
 
