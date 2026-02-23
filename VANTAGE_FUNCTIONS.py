@@ -103,14 +103,20 @@ class Menu_functions_FILE(Data_Frame):
             self.update()
 
             #Read the data
-            dat.df = pd.read_csv(filename,low_memory=False)
+            dat.df = pd.read_csv(filename,low_memory=False,on_bad_lines="skip")
 
             #Check to see if we loaded any data
             if(len(dat.df.columns) == 1):
                 #Otherwise we try tab delimiter
                 print("Tab delimited")
                 dat.df = pd.read_csv(filename,sep='\t',low_memory=False)
-
+                if(len(dat.df.columns) == 1):
+                    #Otherwise we try tab delimiter
+                    print("Tab delimited")
+                    dat.df = pd.read_csv(filename,sep=';',low_memory=False)
+                    if(len(dat.df.columns) == 1):
+                        showinfo(title='File error',message='Could not load the columns, please check the file.')
+                        
             dat.nrow = np.array(dat.df).shape[0]
 
             if(dat.current_label_col in dat.df):
@@ -452,6 +458,13 @@ class Menu_functions_FILE(Data_Frame):
         # dat.btn_annotateGroup.place(in_=dat.panel ,relx = 0.8,rely=  0 )
 
 class Menu_functions_VIDEO(Data_Frame):
+    def creation_time(self,dat):
+        #Check which option is chosen from the menu and print the approriate warning
+        if dat.vid_creation_time.get():
+            showinfo(title='Creation time',message='Creation time is the FIRST frame of the video')
+        elif ~dat.vid_creation_time.get():
+            showinfo(title='Creation time',message='Creation time is the LAST frame of the video')
+            
     def load_avi(self,dat,filename = ""):
         ############
         # load_avi #
@@ -497,6 +510,9 @@ class Menu_functions_VIDEO(Data_Frame):
                     if 'creation_time' in metadata['format']['tags']:
                         creation_time = metadata['format']['tags']['creation_time']
                         dat.vid_last_date = pd.to_datetime(creation_time,utc = utc).timestamp()# - timedelta(seconds = dat.frame_count/dat.fps)
+                        if dat.vid_creation_time.get() == 1:
+                            dat.vid_last_date = pd.to_datetime(creation_time,utc = utc).timestamp() + dat.frame_count / dat.fps
+
                         print("last date (i.e. creation time): " + str(pd.to_datetime(creation_time,utc = utc)))
                     else:
                         print('no creation time')
@@ -1522,7 +1538,11 @@ class Menu_functions_ANALYSIS(Data_Frame):
          column_menu = tk.OptionMenu(wtemp, dat.depth_col, *column_names)
          tk.Label(wtemp, text="Choose a column").grid(row=0, column=0)
          column_menu.grid(row=1, column =0)
-
+        
+        #Temporary(if I don't forget about it) - add a TagID column if not present
+         if 'TagID' not in dat.df.columns:
+            dat.df['TagID'] = 'x'
+            
         #Function when the "Apply button is pressed"
         #Once the column name and format has been chosen we convert the column to POSIX
          def tapply():
@@ -1584,7 +1604,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
              dat.bdives = True #Set the flag to show dive analysis is in progress.
              dat.df = dat.df.assign(dive = 0)
              dat.df = dat.df.assign(forage_dive = 0)
-             dat.df.loc[round(dat.df['Depth'], 2) >= 0.4, 'dive'] = 1
+             dat.df.loc[round(dat.df.loc[:,dat.depth_col_string], 2) >= 0.4, 'dive'] = 1
 
              #Find changepoints for dives
              dat.df = dat.df.assign(dpoint = 0)
@@ -4764,269 +4784,270 @@ class Keyboard_functions(Data_Frame):
         dat.bconfig = False #Reset the config flag
 
         s, image = dat.vid.read()
+        
+        if s:
 
+            time = float(dat.frame)/dat.fps
+            # time = self.vid.get(cv2.CAP_PROP_POS_MSEC)/1000
+            # print(f"Frame {self.frame}")
+            # print(f"Frame time internal {time}")
+            # print(f"Frame time manual {float(self.frame)/self.fps}")
+            tnow = datetime.utcnow()
+            dat.playback_speed = dat.speed_slider.get()
+            dat.frame_date = dat.vid_start_date + timedelta(seconds = time)
 
-        time = float(dat.frame)/dat.fps
-        # time = self.vid.get(cv2.CAP_PROP_POS_MSEC)/1000
-        # print(f"Frame {self.frame}")
-        # print(f"Frame time internal {time}")
-        # print(f"Frame time manual {float(self.frame)/self.fps}")
-        tnow = datetime.utcnow()
-        dat.playback_speed = dat.speed_slider.get()
-        dat.frame_date = dat.vid_start_date + timedelta(seconds = time)
+            # s, image = self.vid.read()
+            #Copythe image to allow YOLO model prediction
+            yolo_image = image.copy()
+            # dat.tbar.set(dat.frame)
 
-        # s, image = self.vid.read()
-        #Copythe image to allow YOLO model prediction
-        yolo_image = image.copy()
-        # dat.tbar.set(dat.frame)
+            blur1 = dat.blur1.get()
+            if(blur1 % 2 == 0):
+                blur1 = blur1 + 1
+            blur2 = dat.blur2.get()
+            if(blur2 % 2 == 0):
+                blur2 = blur2 + 1
 
-        blur1 = dat.blur1.get()
-        if(blur1 % 2 == 0):
-            blur1 = blur1 + 1
-        blur2 = dat.blur2.get()
-        if(blur2 % 2 == 0):
-            blur2 = blur2 + 1
+            canny1 = dat.canny1.get()
+            if(canny1 % 2 == 0):
+                canny1 = canny1 + 1
+            canny2 = dat.canny2.get()
+            if(canny2 % 2 == 0):
+                canny2 = canny2 + 1
 
-        canny1 = dat.canny1.get()
-        if(canny1 % 2 == 0):
-            canny1 = canny1 + 1
-        canny2 = dat.canny2.get()
-        if(canny2 % 2 == 0):
-            canny2 = canny2 + 1
-
-        if(dat.img_edge.get() ==1):
-##            print("canny: "+str(self.canny1.get()))
-            image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-            kernel1 = np.ones((1,1), np.uint8)
-            er = cv2.erode(image, kernel1, iterations = 20)
-            blur = cv2.GaussianBlur(er,(blur1,blur2),0)
-
-            edges = cv2.Canny(blur,dat.canny1.get(),dat.canny2.get(),L2gradient = True)
-            edges = cv2.dilate(edges,np.ones((2,2), np.uint8),iterations = 2)
-            edges = cv2.erode(edges,np.ones((2,2), np.uint8),iterations = 2)
-
-            di = cv2.dilate(edges,np.ones((3,3), np.uint8),iterations = 2)
-
-            edges2 = cv2.Canny(di,dat.canny1.get(),dat.canny2.get(),L2gradient = True)
-
-            image = edges2
-
-        elif(dat.img_th.get() == 1):
-            image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-            kernel1 = np.ones((1,1), np.uint8)
-            er = cv2.erode(image, kernel1, iterations = 20)
-        ##    blur = cv2.bilateralFilter(er,15,int_range/5,int_range/5)
-            blur = cv2.GaussianBlur(er,(blur1,blur2),0)
-##            ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)  #transform image to binary image
-            ret3,th3 =  cv2.threshold(blur,canny1,canny2,cv2.THRESH_BINARY_INV)
-##            th3 = cv2.adaptiveThreshold(blur, 255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, canny1,canny2)
-            image = th3
-        elif(dat.img_blur.get() ==1):
-            image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-            kernel1 = np.ones((1,1), np.uint8)
-            er = cv2.erode(image, kernel1, iterations = 20)
-        ##    blur = cv2.bilateralFilter(er,15,int_range/5,int_range/5)
-            blur = cv2.GaussianBlur(er,(blur1,blur2),0)
-            image = blur
-        elif(dat.img_bright.get() == 1):
-            yuv_image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
-            # Equalize the histogram of the Y channel (luma)
-            y, u, v = cv2.split(yuv_image)
-            y = cv2.equalizeHist(y)
-
-            # Merge the equalized Y channel back with the U and V channels
-            yuv_image = cv2.merge((y, u, v))
-            # Convert the YUV image back to the BGR color space
-            bright_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR)
-            image = bright_image
-        elif(dat.horison_detect.get()):
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            canny1 = 5
-            canny2 = canny1/4
-
-            blur1 = 13
-
-            bilat_blur = 10
-
-            num_down = 2       # number of downsampling steps
-            num_bilateral = bilat_blur  # number of bilateral filtering steps
-
-            img_rgb = image
-
-            # downsample image using Gaussian pyramid
-            img_color = img_rgb
-            for _ in range(num_down):
-                img_color = cv2.pyrDown(img_color)
-
-            # repeatedly apply small bilateral filter instead of
-            # applying one large filter
-            for _ in range(num_bilateral):
-                img_color = cv2.bilateralFilter(img_color, d=9,
-                                                sigmaColor=9,
-                                                sigmaSpace=7)
-
-            # upsample image to original size
-            for _ in range(num_down):
-                img_color = cv2.pyrUp(img_color)
-
-
-            #------------Contrast-----------#
-            lab= cv2.cvtColor(img_color, cv2.COLOR_BGR2LAB)
-            l, a, b = cv2.split(lab)
-            clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(1,1))
-            cl = clahe.apply(l)
-            limg = cv2.merge((cl,a,b))
-            final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-
-            #Crop the image to exclude the time stamp
-            crop = final[0:525, 100:1280]
-
-            #Crop image (excluding timestamp) to see if horison is present
-            crop2 = image[100:455, 100:1180]
-            int_range = int(crop2.max())-int(crop2.min())
-
-            #Only continue if the range of pixel intensities are above a threshold
-            if int_range > 0:
-            ##    int_range = np.int(crop.max())-np.int(crop.min())
-                img_use = crop.copy()
-        ##        img_use = (125-img_use)
-            ##    if (test == 1):cv2.imwrite("img_" + sf.zfill(7) +  ".jpg", img_use)
-                gray = cv2.cvtColor(img_use,cv2.COLOR_BGR2GRAY)
-                img_use = gray
+            if(dat.img_edge.get() ==1):
+    ##            print("canny: "+str(self.canny1.get()))
+                image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
                 kernel1 = np.ones((1,1), np.uint8)
-                er = cv2.erode(gray, kernel1, iterations = 20)
-            ##    blur = cv2.bilateralFilter(er,15,int_range/5,int_range/5)
-                blur = cv2.GaussianBlur(er,(blur1,blur1),0)
-                edges = cv2.Canny(blur,canny1,canny2)
+                er = cv2.erode(image, kernel1, iterations = 20)
+                blur = cv2.GaussianBlur(er,(blur1,blur2),0)
+
+                edges = cv2.Canny(blur,dat.canny1.get(),dat.canny2.get(),L2gradient = True)
                 edges = cv2.dilate(edges,np.ones((2,2), np.uint8),iterations = 2)
                 edges = cv2.erode(edges,np.ones((2,2), np.uint8),iterations = 2)
 
                 di = cv2.dilate(edges,np.ones((3,3), np.uint8),iterations = 2)
 
-                edges2 = cv2.Canny(di,6,1,L2gradient = True)
-                cnts, _= cv2.findContours(edges2.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-                c_wdt = 0
-                c_hold = None
-                box_hold = None
-                dr_hold = None
-                for c in cnts:
-                    dR = 0
-                    #compute the bounding box for the contour, draw and update text
-                    (x,y,w,h) = cv2.boundingRect(c)
-                    rect = cv2.minAreaRect(c)
-                    box = cv2.boxPoints(rect)
-                    box = np.int0(box)
-                    dA =  math.sqrt( (box[0][0]- box[1][0] )**2 + ( box[0][1]-box[1][1] )**2 )
-                    dB =  math.sqrt( (box[1][0]- box[2][0] )**2 + ( box[1][1]-box[2][1] )**2 )
-                    if dA == 0 or dB == 0:
-                        continue
-                    if dA < dB:
-                        dR = dA/dB
-                    else:
-                        dR = dB/dA
-                    if dR <= 0.05:
-                        if w > c_wdt:
-                            c_wdt = w
-                            c_hold = c.copy()
-                            box_hold = box.copy()
-                            dR_hold = dR
+                edges2 = cv2.Canny(di,dat.canny1.get(),dat.canny2.get(),L2gradient = True)
 
-                if c_hold is None:
-                    angle_contour = "NA"
-                    cv2.putText(crop, str(time) + ": " + str(angle_contour),(10,50), font, 1,(0,0,255),2,cv2.LINE_AA)
+                image = edges2
+
+            elif(dat.img_th.get() == 1):
+                image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+                kernel1 = np.ones((1,1), np.uint8)
+                er = cv2.erode(image, kernel1, iterations = 20)
+            ##    blur = cv2.bilateralFilter(er,15,int_range/5,int_range/5)
+                blur = cv2.GaussianBlur(er,(blur1,blur2),0)
+    ##            ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)  #transform image to binary image
+                ret3,th3 =  cv2.threshold(blur,canny1,canny2,cv2.THRESH_BINARY_INV)
+    ##            th3 = cv2.adaptiveThreshold(blur, 255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, canny1,canny2)
+                image = th3
+            elif(dat.img_blur.get() ==1):
+                image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+                kernel1 = np.ones((1,1), np.uint8)
+                er = cv2.erode(image, kernel1, iterations = 20)
+            ##    blur = cv2.bilateralFilter(er,15,int_range/5,int_range/5)
+                blur = cv2.GaussianBlur(er,(blur1,blur2),0)
+                image = blur
+            elif(dat.img_bright.get() == 1):
+                yuv_image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+                # Equalize the histogram of the Y channel (luma)
+                y, u, v = cv2.split(yuv_image)
+                y = cv2.equalizeHist(y)
+
+                # Merge the equalized Y channel back with the U and V channels
+                yuv_image = cv2.merge((y, u, v))
+                # Convert the YUV image back to the BGR color space
+                bright_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR)
+                image = bright_image
+            elif(dat.horison_detect.get()):
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                canny1 = 5
+                canny2 = canny1/4
+
+                blur1 = 13
+
+                bilat_blur = 10
+
+                num_down = 2       # number of downsampling steps
+                num_bilateral = bilat_blur  # number of bilateral filtering steps
+
+                img_rgb = image
+
+                # downsample image using Gaussian pyramid
+                img_color = img_rgb
+                for _ in range(num_down):
+                    img_color = cv2.pyrDown(img_color)
+
+                # repeatedly apply small bilateral filter instead of
+                # applying one large filter
+                for _ in range(num_bilateral):
+                    img_color = cv2.bilateralFilter(img_color, d=9,
+                                                    sigmaColor=9,
+                                                    sigmaSpace=7)
+
+                # upsample image to original size
+                for _ in range(num_down):
+                    img_color = cv2.pyrUp(img_color)
+
+
+                #------------Contrast-----------#
+                lab= cv2.cvtColor(img_color, cv2.COLOR_BGR2LAB)
+                l, a, b = cv2.split(lab)
+                clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(1,1))
+                cl = clahe.apply(l)
+                limg = cv2.merge((cl,a,b))
+                final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+                #Crop the image to exclude the time stamp
+                crop = final[0:525, 100:1280]
+
+                #Crop image (excluding timestamp) to see if horison is present
+                crop2 = image[100:455, 100:1180]
+                int_range = int(crop2.max())-int(crop2.min())
+
+                #Only continue if the range of pixel intensities are above a threshold
+                if int_range > 0:
+                ##    int_range = np.int(crop.max())-np.int(crop.min())
+                    img_use = crop.copy()
+            ##        img_use = (125-img_use)
+                ##    if (test == 1):cv2.imwrite("img_" + sf.zfill(7) +  ".jpg", img_use)
+                    gray = cv2.cvtColor(img_use,cv2.COLOR_BGR2GRAY)
+                    img_use = gray
+                    kernel1 = np.ones((1,1), np.uint8)
+                    er = cv2.erode(gray, kernel1, iterations = 20)
+                ##    blur = cv2.bilateralFilter(er,15,int_range/5,int_range/5)
+                    blur = cv2.GaussianBlur(er,(blur1,blur1),0)
+                    edges = cv2.Canny(blur,canny1,canny2)
+                    edges = cv2.dilate(edges,np.ones((2,2), np.uint8),iterations = 2)
+                    edges = cv2.erode(edges,np.ones((2,2), np.uint8),iterations = 2)
+
+                    di = cv2.dilate(edges,np.ones((3,3), np.uint8),iterations = 2)
+
+                    edges2 = cv2.Canny(di,6,1,L2gradient = True)
+                    cnts, _= cv2.findContours(edges2.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+                    c_wdt = 0
                     c_hold = None
                     box_hold = None
                     dr_hold = None
-                else:
-                    cv2.drawContours(crop,c_hold,-1,(125,125,0),2)
-                    cv2.drawContours(crop,[box_hold],0,(0,0,255),2)
-                    rows,cols = img_use.shape[:2]
-                    [vx,vy,x,y] = cv2.fitLine(c_hold, cv2.DIST_L2,0,0.01,0.01)
-                    lefty = int((-x*vy/vx) + y)
-                    righty = int(((cols-x)*vy/vx)+y)
-                    cv2.line(crop,(cols-1,righty),(0,lefty),(125,125,0),2)
-                    angle_contour = round(np.arctan2(righty-lefty,(cols-1)-0)*180/np.pi,0)
-                    cv2.putText(crop,str(time) + ": " +  str(angle_contour),(10,50), font, 1,(0,0,255),2,cv2.LINE_AA)
-                image = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
-                idx = (np.abs(dat.df.iloc[:,dat.time_col] - dat.frame_date)).argmin() #Find the row in the df with the nearest value to ipick
-                dat.df.loc[idx,"horison_angle"] = angle_contour
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    for c in cnts:
+                        dR = 0
+                        #compute the bounding box for the contour, draw and update text
+                        (x,y,w,h) = cv2.boundingRect(c)
+                        rect = cv2.minAreaRect(c)
+                        box = cv2.boxPoints(rect)
+                        box = np.int0(box)
+                        dA =  math.sqrt( (box[0][0]- box[1][0] )**2 + ( box[0][1]-box[1][1] )**2 )
+                        dB =  math.sqrt( (box[1][0]- box[2][0] )**2 + ( box[1][1]-box[2][1] )**2 )
+                        if dA == 0 or dB == 0:
+                            continue
+                        if dA < dB:
+                            dR = dA/dB
+                        else:
+                            dR = dB/dA
+                        if dR <= 0.05:
+                            if w > c_wdt:
+                                c_wdt = w
+                                c_hold = c.copy()
+                                box_hold = box.copy()
+                                dR_hold = dR
 
-        #Show the YOLO results if it is loaded
-        if(dat.yolo_loaded ==1):
-            #Predict on the frame using the loaded model
-            yolo_predict = dat.yolo_model.predict(yolo_image,
-            conf = 0.3,
-            iou = 0.6,
-            nms = True,
-            max_det = 50,
-            seed = 42,
-            verbose=False)
-            #Read the results
-            model_result = yolo_predict[0]
-
-            #Classifier
-            if model_result.probs is not None:
-                #Extract the results and label
-                cls =  round(model_result.probs.top1,2)
-                if cls == 0:
-                    cls = 1
-                    cls_name = "Krill"
-                    font_color = (255, 12, 12) #Red color text
-                else:
-                    cls=0
-                    cls_name = "No_Krill"
-                    font_color = (36, 255, 12) #Green color text
-                #probability values
-                confs =  round(model_result.probs.top1conf.item(),2)
-                #Text to be printed on image
-                text = f'Class: {cls_name}, Conf: {confs}'
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 0.9
-                font_thickness = 2
-
-                # Get text size
-                text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
-
-                # Calculate the starting point for the text (bottom-right corner)
-                image_height, image_width = image.shape[:2]
-                text_position = (image_width - text_size[0] - 10, image_height - 10)
-
-                # Draw the text on the image
-                cv2.putText(image, text, text_position, font, font_scale, font_color, font_thickness)
-
-            #Object detector
-            elif model_result.boxes is not None:
-                #Find all the bounding boxes
-                bboxes = model_result.boxes.xyxy.int().tolist()
-                #Extract the model results
-                cls =  model_result.boxes.cls.int().tolist()
-                #Extract the probabilities
-                confs =  model_result.boxes.conf.tolist()
-                #Mergee the boxes, labels and probs
-                bb_cls_cf = [(bb,cl,cf) for cl,bb,cf in zip(cls,bboxes,confs)]
-                #Draw the boxes on the image
-                for  bb,cl,cf in bb_cls_cf:
-                    b_x1,b_y1,b_x2,b_y2 =  bb
-                    cv2.rectangle(image,(b_x1,b_y1),(b_x2,b_y2), (0, 255, 0), 2)
-                    cv2.putText(image, str(cf), (b_x1, b_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                    # box_count+=1
+                    if c_hold is None:
+                        angle_contour = "NA"
+                        cv2.putText(crop, str(time) + ": " + str(angle_contour),(10,50), font, 1,(0,0,255),2,cv2.LINE_AA)
+                        c_hold = None
+                        box_hold = None
+                        dr_hold = None
+                    else:
+                        cv2.drawContours(crop,c_hold,-1,(125,125,0),2)
+                        cv2.drawContours(crop,[box_hold],0,(0,0,255),2)
+                        rows,cols = img_use.shape[:2]
+                        [vx,vy,x,y] = cv2.fitLine(c_hold, cv2.DIST_L2,0,0.01,0.01)
+                        lefty = int((-x*vy/vx) + y)
+                        righty = int(((cols-x)*vy/vx)+y)
+                        cv2.line(crop,(cols-1,righty),(0,lefty),(125,125,0),2)
+                        angle_contour = round(np.arctan2(righty-lefty,(cols-1)-0)*180/np.pi,0)
+                        cv2.putText(crop,str(time) + ": " +  str(angle_contour),(10,50), font, 1,(0,0,255),2,cv2.LINE_AA)
+                    image = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+                    idx = (np.abs(dat.df.iloc[:,dat.time_col] - dat.frame_date)).argmin() #Find the row in the df with the nearest value to ipick
+                    dat.df.loc[idx,"horison_angle"] = angle_contour
             else:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            #Show the YOLO results if it is loaded
+            if(dat.yolo_loaded ==1):
+                #Predict on the frame using the loaded model
+                yolo_predict = dat.yolo_model.predict(yolo_image,
+                conf = 0.3,
+                iou = 0.6,
+                nms = True,
+                max_det = 50,
+                seed = 42,
+                verbose=False)
+                #Read the results
+                model_result = yolo_predict[0]
+
+                #Classifier
+                if model_result.probs is not None:
+                    #Extract the results and label
+                    cls =  round(model_result.probs.top1,2)
+                    if cls == 0:
+                        cls = 1
+                        cls_name = "Krill"
+                        font_color = (255, 12, 12) #Red color text
+                    else:
+                        cls=0
+                        cls_name = "No_Krill"
+                        font_color = (36, 255, 12) #Green color text
+                    #probability values
+                    confs =  round(model_result.probs.top1conf.item(),2)
+                    #Text to be printed on image
+                    text = f'Class: {cls_name}, Conf: {confs}'
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.9
+                    font_thickness = 2
+
+                    # Get text size
+                    text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+
+                    # Calculate the starting point for the text (bottom-right corner)
+                    image_height, image_width = image.shape[:2]
+                    text_position = (image_width - text_size[0] - 10, image_height - 10)
+
+                    # Draw the text on the image
+                    cv2.putText(image, text, text_position, font, font_scale, font_color, font_thickness)
+
+                #Object detector
+                elif model_result.boxes is not None:
+                    #Find all the bounding boxes
+                    bboxes = model_result.boxes.xyxy.int().tolist()
+                    #Extract the model results
+                    cls =  model_result.boxes.cls.int().tolist()
+                    #Extract the probabilities
+                    confs =  model_result.boxes.conf.tolist()
+                    #Mergee the boxes, labels and probs
+                    bb_cls_cf = [(bb,cl,cf) for cl,bb,cf in zip(cls,bboxes,confs)]
+                    #Draw the boxes on the image
+                    for  bb,cl,cf in bb_cls_cf:
+                        b_x1,b_y1,b_x2,b_y2 =  bb
+                        cv2.rectangle(image,(b_x1,b_y1),(b_x2,b_y2), (0, 255, 0), 2)
+                        cv2.putText(image, str(cf), (b_x1, b_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                        # box_count+=1
+                else:
+                    pass
+
+            # image = cv2.resize(image,(self.video_width,int(self.video_width/1.5)))
+            image = cv2.resize(image,(dat.video_frame.winfo_width(),int(dat.video_frame.winfo_width()/1.5)))
+            image = Image.fromarray(image)
+            image = ImageTk.PhotoImage(image)
+
+            #wait to make sure the selected playback speed is adhered # TODO:
+
+            while(((datetime.utcnow()-tnow).total_seconds()*1000 < (1000/dat.playback_speed)) and ((datetime.utcnow()-tnow).total_seconds()*1000 < (1000))):
                 pass
 
-        # image = cv2.resize(image,(self.video_width,int(self.video_width/1.5)))
-        image = cv2.resize(image,(dat.video_frame.winfo_width(),int(dat.video_frame.winfo_width()/1.5)))
-        image = Image.fromarray(image)
-        image = ImageTk.PhotoImage(image)
-
-        #wait to make sure the selected playback speed is adhered # TODO:
-
-        while(((datetime.utcnow()-tnow).total_seconds()*1000 < (1000/dat.playback_speed)) and ((datetime.utcnow()-tnow).total_seconds()*1000 < (1000))):
-            pass
-
-        dat.panel.configure(image = image)
-        dat.panel.image = image
+            dat.panel.configure(image = image)
+            dat.panel.image = image
 
 # class Menu_functions_FILTER(Data_Frame):
 #     def apply_filter(self,dat,filter):

@@ -136,6 +136,8 @@ class App(tk.Tk):
         videomenu.add_command(label = "Fix MOV indexing", command = lambda: Menu_functions_VIDEO.fix_video_index(self,IMU_dat))
 
         videomenu.add_command(label="Load wav...", command=lambda:Menu_functions_VIDEO.load_audio(self,IMU_dat))
+        videomenu.add_checkbutton(label="Creation time (Start)", variable=IMU_dat.vid_creation_time, command=lambda:Menu_functions_VIDEO.creation_time(self,IMU_dat))
+        
         ###############
         # Filter menu #
         ###############

@@ -88,7 +88,8 @@ class Data_Frame:
         self.bright = 0                   #Brighten image - 0 = no; 1 = yes
         self.bsquash = True               #Is the squased image present?
         self.key = 0                      #Holder for the key being pressed on the keyboard
-
+        self.vid_creation_time = tk.BooleanVar()  #TEMP FIX - this is for AVI files where the creation date is the first frame, not the last
+        
         #Variables used in interactive widgets (e.g. sliders, or checkboxes)
         self.annotate_selection = tk.BooleanVar()      #Checkbox menu to decide if a single point should be annotated
         self.norm = tk.IntVar()                     #Checkbox for normalization of data
