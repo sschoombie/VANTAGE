@@ -89,6 +89,7 @@ class Data_Frame:
         self.bsquash = True               #Is the squased image present?
         self.key = 0                      #Holder for the key being pressed on the keyboard
         self.vid_creation_time = tk.BooleanVar()  #TEMP FIX - this is for AVI files where the creation date is the first frame, not the last
+        self.cam_type = tk.StringVar(value="ZS")              #Camera type - the default is Zoolog Solutions camera
         
         #Variables used in interactive widgets (e.g. sliders, or checkboxes)
         self.annotate_selection = tk.BooleanVar()      #Checkbox menu to decide if a single point should be annotated

@@ -2653,13 +2653,13 @@ class Menu_functions_EXPORT(Data_Frame):
         # dat.df.to_csv(out_file ,index = False)
         pce_out.to_csv(out_file,index = False)
         wtemp.destroy()
-        with open('config.txt','w') as f:
-            f.write(str(dat.vid_start_date)+
-                    str(dat.filename)+
-                    str(dat.vid1)+
-                    str(dat.frame)
-                    )
-            f.write('\n')
+        # with open('config.txt','w') as f:
+            # f.write(str(dat.vid_start_date)+
+                    # str(dat.filename)+
+                    # str(dat.vid1)+
+                    # str(dat.frame)
+                    # )
+            # f.write('\n')
         dat.bexported = True #Set flag
 ##            f.close()
         print("DONE")
@@ -4788,6 +4788,11 @@ class Keyboard_functions(Data_Frame):
         if s:
 
             time = float(dat.frame)/dat.fps
+            if(dat.cam_type.get() == "LL"):
+                time = (float(dat.frame)/dat.fps) - (0.05359 + 0.0000145 * dat.frame)
+                # time = (float(dat.frame)/dat.fps) - (0.05359 + 0.00002812 * dat.frame)
+            else:
+                time = float(dat.frame)/dat.fps
             # time = self.vid.get(cv2.CAP_PROP_POS_MSEC)/1000
             # print(f"Frame {self.frame}")
             # print(f"Frame time internal {time}")
@@ -4936,7 +4941,7 @@ class Keyboard_functions(Data_Frame):
                         (x,y,w,h) = cv2.boundingRect(c)
                         rect = cv2.minAreaRect(c)
                         box = cv2.boxPoints(rect)
-                        box = np.int0(box)
+                        box = np.intp(box)
                         dA =  math.sqrt( (box[0][0]- box[1][0] )**2 + ( box[0][1]-box[1][1] )**2 )
                         dB =  math.sqrt( (box[1][0]- box[2][0] )**2 + ( box[1][1]-box[2][1] )**2 )
                         if dA == 0 or dB == 0:

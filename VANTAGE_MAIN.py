@@ -134,6 +134,10 @@ class App(tk.Tk):
         videomenu.add_command(label="Set video directory...", command=lambda:Menu_functions_VIDEO.save_wd(IMU_dat))
         videomenu.add_command(label = "Convert video to mp4", command = lambda: Menu_functions_VIDEO.convert_video(self,IMU_dat))
         videomenu.add_command(label = "Fix MOV indexing", command = lambda: Menu_functions_VIDEO.fix_video_index(self,IMU_dat))
+        camera_menu = tk.Menu(videomenu, tearoff=0)
+        videomenu.add_cascade(label="Camera Type", menu=camera_menu)
+        camera_menu.add_radiobutton(label="Zoolog Solutions", variable=IMU_dat.cam_type, value="ZS",command=lambda: print(f"Selected camera type: {IMU_dat.cam_type.get()}"))
+        camera_menu.add_radiobutton(label="Little Leonardo", variable=IMU_dat.cam_type, value="LL",command=lambda: print(f"Selected camera type: {IMU_dat.cam_type.get()}"))
 
         videomenu.add_command(label="Load wav...", command=lambda:Menu_functions_VIDEO.load_audio(self,IMU_dat))
         videomenu.add_checkbutton(label="Creation time (Start)", variable=IMU_dat.vid_creation_time, command=lambda:Menu_functions_VIDEO.creation_time(self,IMU_dat))
