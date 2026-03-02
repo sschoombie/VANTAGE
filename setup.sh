@@ -1,45 +1,57 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ===== Required versions =====
-REQUIRED_PYTHON="3.12.2"
+# ============================
+# Setup script for VANTAGE
+# ============================
+
+# ===== Configuration =====
 VENV_NAME="venv_vantage"
+REQUIRED_MAJOR="3"
+REQUIRED_MINOR="12"
 
 echo "Checking Python installation..."
 
+# ===== Python candidates =====
+PY_CANDIDATES=("python3.12" "python3" "python")
 PY_FOUND=""
 
-# ---- Find python executables in PATH ----
-for p in $(which -a python3 2>/dev/null); do
-    VERSION=$("$p" --version 2>&1 | awk '{print $2}')
-    echo "Checking Python at $p: version $VERSION"
-    if [ "$VERSION" == "$REQUIRED_PYTHON" ]; then
-        PY_FOUND="$p"
-        break
+# ---- Find a Python 3.12.x installation ----
+for p in "${PY_CANDIDATES[@]}"; do
+    if command -v "$p" >/dev/null 2>&1; then
+        VERSION=$("$p" --version 2>&1 | awk '{print $2}')
+        MAJOR=$(echo "$VERSION" | cut -d. -f1)
+        MINOR=$(echo "$VERSION" | cut -d. -f2)
+        echo "Checking Python at $p: version $VERSION"
+
+        if [ "$MAJOR" = "$REQUIRED_MAJOR" ] && [ "$MINOR" = "$REQUIRED_MINOR" ]; then
+            PY_FOUND="$p"
+            break
+        fi
     fi
 done
 
 if [ -z "$PY_FOUND" ]; then
     echo ""
-    echo "No Python $REQUIRED_PYTHON installation found in PATH."
-    echo "Please install Python $REQUIRED_PYTHON from:"
+    echo "No Python 3.12 installation found in PATH."
+    echo "Please install Python 3.12.x from:"
     echo "https://www.python.org/downloads/release/python-3122/"
     echo ""
-    echo "If using Homebrew:"
+    echo "On macOS, you can also use Homebrew:"
     echo "brew install python@3.12"
     exit 1
 fi
 
 echo "Using Python: $PY_FOUND"
 
-# ===== Check ffmpeg =====
+# ===== Check FFmpeg =====
 if ! command -v ffmpeg >/dev/null 2>&1; then
     echo ""
     echo "FFmpeg is not installed or not in PATH."
-    echo "Install it from:"
-    echo "https://ffmpeg.org/download.html"
-    echo ""
-    echo "Or via Homebrew:"
-    echo "brew install ffmpeg"
+    echo "Install via your package manager, e.g.:"
+    echo "  Ubuntu/Debian: sudo apt install ffmpeg"
+    echo "  Fedora:        sudo dnf install ffmpeg"
+    echo "  Arch:          sudo pacman -S ffmpeg"
+    echo "  macOS (brew):  brew install ffmpeg"
     exit 1
 fi
 
@@ -68,7 +80,9 @@ else
     exit 1
 fi
 
+# ===== Finish =====
 deactivate
 
 echo ""
-echo "Setup complete! You can now run your script."
+echo "Setup complete!"
+echo "You can now run your script using run.sh"

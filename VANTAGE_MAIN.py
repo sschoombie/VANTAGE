@@ -10,6 +10,8 @@ if platform.system() == 'Windows':
     print("Windows")
     from ctypes import windll
     windll.shcore.SetProcessDpiAwareness(1)
+elif platform.system() == 'Linux':
+    print("Linux")
 
 #These are the custom scripts used to drive the programme.
 #They should be in the same folder as this (MAIN) script.
@@ -30,7 +32,15 @@ class App(tk.Tk):
         ####################################################
         super().__init__()
         self.title('VANTAGE v'+vnum)
-        self.state('zoomed') #This makes sure the program is loaded in full screen
+        #self.state('zoomed') #This makes sure the program is loaded in full screen
+        if platform.system() == "Windows":
+            self.state("zoomed")
+        else:
+            # Try maximize; fallback to normal
+            try:
+                self.attributes("-zoomed", True)
+            except tk.TclError:
+                self.state("normal")
         #Or you can set the desired start size
         # self.geometry("%dx%d" % (self.winfo_screenwidth() , self.winfo_screenheight()))
 
