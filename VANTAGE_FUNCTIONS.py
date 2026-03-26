@@ -65,7 +65,6 @@ try:
 except:
     print("ultralytics lib not found - YOLO models won't be available")
 
-from tensorflow.keras.models import load_model
 
 class Menu_functions_FILE(Data_Frame):
 
@@ -3435,116 +3434,6 @@ class Menu_functions_CHEATSHEETS(Data_Frame):
         btn_close.pack()
 
 class Menu_functions_MODEL(Data_Frame):
-    def predict_TCN(self,dat):
-        print("predicting")
-        def normalize_acc(df, clip=2):
-   
-            df = df.copy()  # avoid modifying original DataFrame
-            
-            def scale(series):
-                """Standardize series like R's scale()"""
-                return (series - series.mean()) / series.std(ddof=1)  # ddof=1 for sample std like R
-            
-            # Clip and scale each axis
-            df["X_std"] = scale(np.clip(df["accX"], -clip, clip))
-            df["Y_std"] = scale(np.clip(df["accY"], -clip, clip))
-            df["Z_std"] = scale(np.clip(df["accZ"], -clip, clip))
-            
-            return df
-        def create_windows(df, cols=[dat.time_col_string,"TagID","X_std", "Y_std", "Z_std"], window_size=8, step=2):
-            data = df[cols].values  # shape: (num_samples, num_features)
-            num_samples = data.shape[0]
-            
-            windows = []
-            for start in range(0, num_samples - window_size + 1, step):
-                end = start + window_size
-                window = data[start:end, :]
-                windows.append(window)
-            
-            return np.array(windows)
-            
-        def unpack_predictions(predictions, X_meta, step=2):
-    
-            num_windows, window_size = X_meta.shape[:2]
-            
-            rows = []
-            for i in range(num_windows):
-                # Map each window prediction to the *first row of the window*
-                timestamp = pd.to_datetime(X_meta[i, 0, 0], utc=True)
-                tagid     = X_meta[i, 0, 1]
-                
-                # Handle multiple output predictions
-                if predictions.ndim == 1:
-                    pred_value = predictions[i]
-                else:
-                    pred_value = predictions[i].tolist()
-                
-                rows.append([timestamp, tagid, pred_value])
-            
-            df_pred = pd.DataFrame(rows, columns=[dat.time_col_string, "TagID", "Prediction"])
-            return df_pred
-        
-        def to_series(windows, step):
-            windows = np.asarray(windows)
-            keep = step if step > 0 else (windows.shape[1] if windows.ndim >= 2 else 1)
-
-            if windows.ndim == 2:
-                n_segments, window_size = windows.shape
-                out = np.empty(n_segments * keep, dtype=windows.dtype)
-                pos = 0
-                for i in range(n_segments):
-                    out[pos:pos+keep] = windows[i, :keep]
-                    pos += keep
-                return out
-        
-
-        model = load_model("models/TCN.keras")
-        print("model loaded")
-        if "X" in dat.df.columns:
-            dat.df = dat.df.rename(columns={
-                "X": "accX",
-                "Y": "accY",
-                "Z": "accZ"
-            })
-        
-        dat.df = normalize_acc(dat.df,2)
-        segment_columns = [dat.time_col_string,"X_std","Y_std","Z_std"]
-        model_columns = ["X_std","Y_std","Z_std"]
-
-        # Get indices of Timestamp and TagID
-        ts_idx = segment_columns.index(dat.time_col_string)  # equivalent to R match()
-        model_idx = [segment_columns.index(col) for col in model_columns]
-
-        X = create_windows(dat.df, cols=segment_columns, window_size=8, step=2)
-
-        X_model = np.array(X[:, :, model_idx], dtype=np.float32) 
-        X_time = X[:, :, ts_idx]
-        X_time.ndim 
-
-        
-
-        predictions = model.predict(X_model)
-
-        pred_binary = (predictions > 0.5).astype(int)
-
-        pred_values = np.repeat(pred_binary, 2)
-        pred_times = to_series(X_time, step=2)
-
-        pred_df = pd.DataFrame({
-            dat.time_col_string: pred_times,
-            "Prediction": pred_values
-        })
-         #df["Timestamp"] = pd.to_datetime(df["Timestamp"], utc=True)
-        #pred_df["Timestamp"] = pd.to_datetime(pred_df["Timestamp"], utc=True)
-
-        # Merge predictions into original DataFrame
-        dat.df = dat.df.merge(pred_df, on=dat.time_col_string, how="left")   
-        dat.df["Prediction"] = dat.df["Prediction"].fillna(0)
-        pre,ext = os.path.splitext(dat.filename)
-        pred_file = pre + "_PRED.csv"
-        pred_out = dat.df[["Prediction"]]
-        pred_out.to_csv(pred_file,index = False)
-        
     def model_YOLO(self,dat):
         file_types = (('pt files', '*.pt'),('All files', '*.*'))
         yolo_file = fd.askopenfilename(

@@ -225,7 +225,6 @@ class App(tk.Tk):
         menu.add_cascade(label = "Model", menu = modelmenu)
         modelmenu.add_command(label = "Load YOLO", command = lambda:Menu_functions_MODEL.model_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
         modelmenu.add_command(label = "Predict with YOLO", command = lambda:Menu_functions_MODEL.run_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
-        modelmenu.add_command(label = "Predict PCE", command = lambda:Menu_functions_MODEL.predict_TCN(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
         #
         # modelmenu.add_command(label = "Load model", command = lambda:Menu_functions_MODEL.model_load(self,IMU_dat)) #Load a pre-trained model and its weights
         # modelmenu.add_command(label = "Preprocess data", command = lambda:Menu_functions_MODEL.model_pre_process(self,IMU_dat)) #Pre-process the data to conform to the model parameters
