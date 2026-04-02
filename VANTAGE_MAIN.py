@@ -177,7 +177,7 @@ class App(tk.Tk):
         # plotmenu.add_command(label = "Audio", command = lambda:Menu_functions_PLOT.plot_audio(self,IMU_dat)) #Notch filter
 
         #################
-        # FUnctions menu #
+        # Functions menu #
         #################
 
         analysismenu = tk.Menu(menu,tearoff = 0)
@@ -188,6 +188,7 @@ class App(tk.Tk):
         analysismenu.add_command(label = "Sync dives (Manual)", command = lambda:Menu_functions_ANALYSIS.sync_dives_manual(self,IMU_dat)) #Find dives manual method
         analysismenu.add_command(label = "Sync dives (AUTO)", command = lambda:Menu_functions_ANALYSIS.synch_dives_auto(self,IMU_dat)) #Find dives manual method
         analysismenu.add_command(label = "Navigate events", command = lambda:Menu_functions_ANALYSIS.pce_navigate(self,IMU_dat)) #Export ALL PCE images
+        analysismenu.add_checkbutton(label = "Rotate ACC X & Y",variable = IMU_dat.acc_rotate, command = lambda:Menu_functions_ANALYSIS.acc_rotate(self,IMU_dat)) #Rotate the axes for new loggers where X and Y are sign reversed
 
         #add a submenu under analysis menu
         analysis_submenu = tk.Menu(analysismenu,tearoff = 0)
@@ -226,6 +227,7 @@ class App(tk.Tk):
         modelmenu.add_command(label = "Load YOLO", command = lambda:Menu_functions_MODEL.model_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
         modelmenu.add_command(label = "Predict with YOLO", command = lambda:Menu_functions_MODEL.run_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
         modelmenu.add_command(label = "Predict PCE", command = lambda:Menu_functions_MODEL.predict_TCN(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
+        modelmenu.add_command(label = "Summarise PCE/PRED", command = lambda:Menu_functions_MODEL.summarise_pce(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
         #
         # modelmenu.add_command(label = "Load model", command = lambda:Menu_functions_MODEL.model_load(self,IMU_dat)) #Load a pre-trained model and its weights
         # modelmenu.add_command(label = "Preprocess data", command = lambda:Menu_functions_MODEL.model_pre_process(self,IMU_dat)) #Pre-process the data to conform to the model parameters

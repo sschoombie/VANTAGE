@@ -238,6 +238,8 @@ class Menu_functions_FILE(Data_Frame):
 
                 if('BEHAV' in temp_df):
                     dat.df.iloc[:,dat.df.columns.get_loc("BEHAV")] = temp_df.iloc[:,temp_df.columns.get_loc("BEHAV")]
+                if('PCE_dive' in temp_df):
+                    dat.df["PCE_dive"] = temp_df.iloc[:,temp_df.columns.get_loc("PCE_dive")]
                 dat.out_file_loaded = True
                 try:
                     dat.btn_2['state'] = 'disabled' #Cheatsheet button disable
@@ -1451,9 +1453,14 @@ class Menu_functions_ANALYSIS(Data_Frame):
             #Fix broken/sticky ACC data
             #Check the acc axes
             #First make sure they are numeric
-            dat.df[s_ax] = pd.to_numeric(dat.df[s_ax], errors='coerce')
-            dat.df[s_ay] = pd.to_numeric(dat.df[s_ay], errors='coerce')
-            dat.df[s_az] = pd.to_numeric(dat.df[s_az], errors='coerce')
+            if(dat.acc_rotate.get() == 1):
+                dat.df[s_ax] = -pd.to_numeric(dat.df[s_ax], errors='coerce')
+                dat.df[s_ay] = -pd.to_numeric(dat.df[s_ay], errors='coerce')
+                dat.df[s_az] = pd.to_numeric(dat.df[s_az], errors='coerce')
+            else:
+                dat.df[s_ax] = pd.to_numeric(dat.df[s_ax], errors='coerce')
+                dat.df[s_ay] = pd.to_numeric(dat.df[s_ay], errors='coerce')
+                dat.df[s_az] = pd.to_numeric(dat.df[s_az], errors='coerce')
             dat.df[s_ax] = dat.df[s_ax].interpolate()
             dat.df[s_ay] = dat.df[s_ay].interpolate()
             dat.df[s_az] = dat.df[s_az].interpolate()
@@ -1572,7 +1579,20 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
         #Automatic detection of dives
          print("Finding dives...")
-
+        
+        #Added for AX loggers where depth is actually pressure
+        #We look at the minimum and maximum values of depth - if they are too large, it is pressure 
+         if(min(dat.df.loc[:,dat.depth_col_string]) > 900 and max(dat.df.loc[:,dat.depth_col_string]) > 2000):
+            depth = dat.df.loc[:,dat.depth_col_string].values
+            offset = np.median(depth[depth < 1300])
+            Depth = (depth - offset) / 100        
+            dat.df["Depth"] = Depth
+            dat.depth_col_string = "Depth"
+            dat.depth_col = dat.df.columns.get_loc("Depth")
+            print("Converted pressure to depth")
+            
+        
+        
          if('DIVE' in dat.df):
              dat.dive_num = dat.df["DIVE"].max()
          else:
@@ -1605,7 +1625,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
              dat.bdives = True #Set the flag to show dive analysis is in progress.
              dat.df = dat.df.assign(dive = 0)
              dat.df = dat.df.assign(forage_dive = 0)
-             dat.df.loc[round(dat.df.loc[:,dat.depth_col_string], 2) >= 0.4, 'dive'] = 1
+             dat.df.loc[round(dat.df.loc[:,dat.depth_col_string], 2) >= 1, 'dive'] = 1
 
              #Find changepoints for dives
              dat.df = dat.df.assign(dpoint = 0)
@@ -1682,6 +1702,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
              print("Finding dives...")
 
              icounter = 0
+             
              for ipt in np.where(dat.df["dpoint"] == 1)[0]:
                  if dat.bdives == True:
                      icounter = icounter + 1
@@ -1711,7 +1732,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
                        #Reset the dive column and forage column
                        temp_data.dive = 0
                        temp_data.forage_dive = 0
-
+                       
                        #Timestamp
                        dive_end_time = dat.df.at[rend, dat.time_col_string]
                        #Duration of the dive (in seconds)
@@ -1750,14 +1771,14 @@ class Menu_functions_ANALYSIS(Data_Frame):
                        if dive_max_depth >= 3:
 
                          #Mark as dive only if deep and long enough
-                         if dive_dur >= 20:
+                         if dive_dur >= 10:
                              temp_data.dive = 1
                              #Mark as forage dive if pitch SD is
                              # if dive_pitch_sd >= 15:
                              #     temp_data.forage_dive = 1
 
-                         temp_data = temp_data.assign(d_depth = 0,
-                                                       dt = 0)
+                         temp_data = temp_data.assign(d_depth = 0.0,
+                                                       dt = 0.0)
 
                          #Calculate the rate of change for dives
                          for i in range(len(temp_data)-1):
@@ -1776,14 +1797,48 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
                          #Find phases
                          #bottom phase is where Depth is > %50 of max depth and rate of change is between -0.5 and 0.5
-                         try:
-                             bottom_start = temp_data.loc[(temp_data['d_rate'] <= 0.5) & (temp_data['depth_scale'] > 0.5)].index[0]
-                         except:
-                             bottom_start = temp_data.loc[temp_data['depth_scale'] > 0.5].index[0]
-                         try:
-                             bottom_end = temp_data.loc[(temp_data['d_rate'] <= -0.5) & (temp_data['depth_scale'] < 0.5)].index[0]
-                         except:
-                             bottom_end = temp_data.loc[(temp_data['depth_scale'] < 0.5) & (temp_data[dat.time_col_string] > temp_data.iloc[bottom_start][dat.time_col_string])].index[0]
+                         # ---- bottom_start ----
+                         mask_start = (temp_data['d_rate'] <= 0.5) & (temp_data['depth_scale'] > 0.5)
+                         candidates_start = temp_data.loc[mask_start].index
+
+                         if len(candidates_start) > 0:
+                            bottom_start = candidates_start[0]
+                         else:
+                            candidates_start = temp_data.loc[temp_data['depth_scale'] > 0.5].index
+                            if len(candidates_start) > 0:
+                                bottom_start = candidates_start[0]
+                            else:
+                                bottom_start = None
+
+
+                         # ---- bottom_end ----
+                         if bottom_start is not None:
+                            mask_end = (temp_data['d_rate'] <= -0.5) & (temp_data['depth_scale'] < 0.5)
+                            candidates_end = temp_data.loc[mask_end].index
+
+                            if len(candidates_end) > 0:
+                                bottom_end = candidates_end[0]
+                            else:
+                                mask_end2 = (
+                                    (temp_data['depth_scale'] < 0.5) &
+                                    (temp_data[dat.time_col_string] > temp_data.iloc[bottom_start][dat.time_col_string])
+                                )
+                                candidates_end = temp_data.loc[mask_end2].index
+
+                                if len(candidates_end) > 0:
+                                    bottom_end = candidates_end[0]
+                                else:
+                                    bottom_end = None
+                         else:
+                            bottom_end = None
+                         # try:
+                             # bottom_start = temp_data.loc[(temp_data['d_rate'] <= 0.5) & (temp_data['depth_scale'] > 0.5)].index[0]
+                         # except:
+                             # bottom_start = temp_data.loc[temp_data['depth_scale'] > 0.5].index[0]
+                         # try:
+                             # bottom_end = temp_data.loc[(temp_data['d_rate'] <= -0.5) & (temp_data['depth_scale'] < 0.5)].index[0]
+                         # except:
+                             # bottom_end = temp_data.loc[(temp_data['depth_scale'] < 0.5) & (temp_data[dat.time_col_string] > temp_data.iloc[bottom_start][dat.time_col_string])].index[0]
 
                          # plt.plot(temp_data[dat.depth_col_string])
                          # plt.plot(temp_data["depth_scale"])
@@ -2518,6 +2573,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
             #Choose the next available annotations and check if the video file is correct
             if sselect == 'next':
                 pce_select = temp_dat.iloc[0]
+                print(pce_select.vid)
                 #Check video
                 if pce_select.vid != (dat.vid1.split('/')[-1].split(".")[0]+'.mp4'):
                     # pass
@@ -2633,6 +2689,9 @@ class Menu_functions_ANALYSIS(Data_Frame):
     def check_horison_column(self,dat):
         if "horison_angle" not in dat.df.columns:
             dat.df["horison_angle"] = None
+            
+    def acc_rotate(self,dat):
+        print("ACC rotated")
 
 class Menu_functions_EXPORT(Data_Frame):
     def export_events(self,dat):
@@ -3435,6 +3494,16 @@ class Menu_functions_CHEATSHEETS(Data_Frame):
         btn_close.pack()
 
 class Menu_functions_MODEL(Data_Frame):
+    def summarise_pce(self,dat):
+        dat.df["tot_dive_pred"] = (
+        dat.df.groupby("dive_num")["Prediction"]
+        .transform("sum")/8
+        )
+        dat.df["tot_dive_obs"] = (
+            (dat.df["PCE"] == 1)
+            .groupby(dat.df["dive_num"])
+            .transform("sum")
+        )
     def predict_TCN(self,dat):
         print("predicting")
         def normalize_acc(df, clip=2):
@@ -3451,7 +3520,7 @@ class Menu_functions_MODEL(Data_Frame):
             df["Z_std"] = scale(np.clip(df["accZ"], -clip, clip))
             
             return df
-        def create_windows(df, cols=[dat.time_col_string,"TagID","X_std", "Y_std", "Z_std"], window_size=8, step=2):
+        def create_windows(df, cols, window_size, step):
             data = df[cols].values  # shape: (num_samples, num_features)
             num_samples = data.shape[0]
             
@@ -3463,7 +3532,7 @@ class Menu_functions_MODEL(Data_Frame):
             
             return np.array(windows)
             
-        def unpack_predictions(predictions, X_meta, step=2):
+        def unpack_predictions(predictions, X_meta, step):
     
             num_windows, window_size = X_meta.shape[:2]
             
@@ -3514,25 +3583,28 @@ class Menu_functions_MODEL(Data_Frame):
         # Get indices of Timestamp and TagID
         ts_idx = segment_columns.index(dat.time_col_string)  # equivalent to R match()
         model_idx = [segment_columns.index(col) for col in model_columns]
-
-        X = create_windows(dat.df, cols=segment_columns, window_size=8, step=2)
+        
+        istep = 2
+        iwindow = 8
+        
+        X = create_windows(dat.df, cols=segment_columns, window_size=iwindow, step=istep)
 
         X_model = np.array(X[:, :, model_idx], dtype=np.float32) 
         X_time = X[:, :, ts_idx]
         X_time.ndim 
 
-        
-
         predictions = model.predict(X_model)
 
         pred_binary = (predictions > 0.5).astype(int)
 
-        pred_values = np.repeat(pred_binary, 2)
-        pred_times = to_series(X_time, step=2)
+        pred_prob = np.repeat(predictions, istep)
+        pred_values = np.repeat(pred_binary, istep)
+        pred_times = to_series(X_time, step=istep)
 
         pred_df = pd.DataFrame({
             dat.time_col_string: pred_times,
-            "Prediction": pred_values
+            "Prediction": pred_values,
+            "Prediction_prob": pred_prob
         })
          #df["Timestamp"] = pd.to_datetime(df["Timestamp"], utc=True)
         #pred_df["Timestamp"] = pd.to_datetime(pred_df["Timestamp"], utc=True)
@@ -3540,9 +3612,13 @@ class Menu_functions_MODEL(Data_Frame):
         # Merge predictions into original DataFrame
         dat.df = dat.df.merge(pred_df, on=dat.time_col_string, how="left")   
         dat.df["Prediction"] = dat.df["Prediction"].fillna(0)
+        dat.df["Prediction_prob"] = dat.df["Prediction_prob"].fillna(0)
+        
+        dat.df.loc[dat.df["dive"] == 0, ["Prediction", "Prediction_prob"]] = 0
+        
         pre,ext = os.path.splitext(dat.filename)
         pred_file = pre + "_PRED.csv"
-        pred_out = dat.df[["Prediction"]]
+        pred_out = dat.df[["Prediction", "Prediction_prob"]]
         pred_out.to_csv(pred_file,index = False)
         
     def model_YOLO(self,dat):
@@ -4299,7 +4375,8 @@ class Button_functions(Data_Frame):
     def rst_video(self):
         self.frame = 0
     def save_image(self):
-        s, self.image = self.vid.read()
+        #s, self.image = self.vid.read()
+        
         filename = str(self.vid1) + "_" + str(self.frame) + ".jpg"
         cv2.imwrite(filename, self.image)
     def save_vid_clip(self):
@@ -4895,6 +4972,7 @@ class Keyboard_functions(Data_Frame):
         dat.bconfig = False #Reset the config flag
 
         s, image = dat.vid.read()
+        dat.image = image.copy()
         
         if s:
 

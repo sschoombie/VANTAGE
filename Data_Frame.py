@@ -75,7 +75,7 @@ class Data_Frame:
         self.temp_done = True              #This is used to hold pause processes while waiting for others to finish
         self.yolo_loaded = 0               #Check if a YOLO model is loaded or not
         self.squash_loaded = False         #Check if the squashed image is loaded
-
+        
         #Video analysis
         self.frame = -1                   #Keeping track of the current video frame
         self.video_offset = timedelta(0)  #Offset in time between the video and accompanying data
@@ -105,7 +105,8 @@ class Data_Frame:
         self.img_edge = tk.IntVar()                 #Checkbox for edge detection
         self.img_bright = tk.IntVar()               #Checkbox for brightning of image
         self.horison_detect = tk.BooleanVar()       #Menu checkbox to see if the horizon should be estimated
-
+        self.acc_rotate = tk.BooleanVar()           #Menu checkbox to rotate the XY axes by changing their signs - (needed for AX type loggers)
+        
 
 
     def plot_frame(self):
