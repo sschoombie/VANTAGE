@@ -489,6 +489,13 @@ class Menu_functions_VIDEO(Data_Frame):
                             initialdir=dat.wd,
                             filetypes=file_types)
             if (len(filename) > 0):
+                # Hold on to the previous video details (if present)
+                if(dat.vid_button != 0):
+                    temp_dur = dat.frame_count/dat.fps
+                    temp_date = dat.vid_start_date
+                    
+                    
+                #Load the video    
                 dat.vid1 = filename
                 # showinfo(title='Selected File',message=filename)
                 dat.vid = cv2.VideoCapture(dat.vid1)
@@ -524,8 +531,7 @@ class Menu_functions_VIDEO(Data_Frame):
                 except subprocess.CalledProcessError as e:
                     print("Error:", e)
                     dat.vid_last_date = os.path.getmtime(dat.vid1) #Read file creation date (this is the date at the end of the clip) and covert to POSIX
-
-
+                                          
                 files = sorted(os.listdir(dat.wd))
                 vn = dat.vid1.split("/")[-1]
                 dat.v_num = files.index(vn)
@@ -563,7 +569,20 @@ class Menu_functions_VIDEO(Data_Frame):
 
                     dat.vid_start_date = vid_start_date
                     print("adjusted date: " + str(dat.vid_start_date))
-
+                    print("Vid_button: " + str(dat.vid_button))
+                    if(dat.vid_date_set != 1 and 
+                        dat.vid_button == 1 and 
+                        (dat.vid_start_date - temp_date < timedelta(seconds = temp_dur))):
+                        print("Next - Video timestamp incorrect - using previous duration")
+                        dat.vid_start_date = temp_date + timedelta(seconds = temp_dur)
+                        dat.video_button = 0
+                    elif (dat.vid_date_set != 1 and 
+                          dat.vid_button == -1 and 
+                          (temp_date - dat.vid_start_date < timedelta(seconds = temp_dur))):
+                        print("Prev - Video timestamp incorrect - using previous duration")
+                        dat.vid_start_date = temp_date - timedelta(seconds = temp_dur) 
+                        dat.video_button = 0
+                
                 dat.frame_date=dat.vid_start_date
 
                 dat.frame = 1
@@ -1522,6 +1541,35 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
             #Rolling SD of pitch (for foraging dive estimation) over 2 seconds
             dat.df["pitch_rm"] = dat.df['pitch'].rolling((rolling_window1*2), center = True).std()
+            
+            # #Jerk ACC
+            # jerk = np.sqrt(
+                # np.diff(dat.df[s_ax])**2 +
+                # np.diff(dat.df[s_ay])**2 +
+                # np.diff(dat.df[s_az])**2
+            # )
+
+            # dat.df["jerk"] = np.concatenate([[np.nan], jerk])
+            
+            # #Jerk ACC smooth
+            # jerk_s = np.sqrt(
+                # np.diff(dat.df["ax_s"])**2 +
+                # np.diff(dat.df["ay_s"])**2 +
+                # np.diff(dat.df["az_s"])**2
+            # )
+
+            # dat.df["jerk_s"] = np.concatenate([[np.nan], jerk_s])
+            
+            # #Jerk ACC SD
+            # jerk_sd = np.sqrt(
+                # np.diff(dat.df["ax_std"])**2 +
+                # np.diff(dat.df["ay_std"])**2 +
+                # np.diff(dat.df["az_std"])**2
+            # )
+
+            # dat.df["jerk_sd"] = np.concatenate([[np.nan], jerk_sd])
+            
+            
 
             wtemp.destroy()
 
@@ -3630,7 +3678,7 @@ class Menu_functions_MODEL(Data_Frame):
 
         print("LOADING YOLO model.... " + yolo_file)
         try:
-            dat.yolo_model = YOLO(yolo_file)
+            dat.yolo_model = YOLO(yolo_file).to("cuda")
             dat.yolo_loaded = 1
             print("SUCCESSFULLY LOADED YOLO MODEL")
         except:
@@ -3760,7 +3808,7 @@ class Menu_functions_MODEL(Data_Frame):
                      elif dat.yolo_col == "Head":
                          yolo_predict = dat.yolo_model.predict(image,
                          conf = 0.3,
-                         iou = 0.3,
+                         iou = 0.6,
                          nms = True,
                          max_det = 1,
                          seed = 42,
@@ -3784,7 +3832,7 @@ class Menu_functions_MODEL(Data_Frame):
                              font_color = (36, 255, 12) #Green color text
                              dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 0
                      #Object detector
-                     elif (model_result.boxes is not None) and (dat.yolo_col == "Penguin" or dat.yolo_col == "Head"):
+                     elif (model_result.boxes is not None and len(model_result.boxes) > 0) and (dat.yolo_col == "Penguin" or dat.yolo_col == "Head"):
                              #Find all the bounding boxes
                              bboxes = model_result.boxes.xyxy.int().tolist()
                              # print(bboxes)
@@ -4017,6 +4065,7 @@ class Button_functions(Data_Frame):
             # print(dat.v_num)
             print(files[dat.v_num])
             dat.vid1 = dat.wd + "/" + files[dat.v_num]
+            dat.vid_button = 1
             Menu_functions_VIDEO.load_avi(self,dat,dat.vid1)
     #
     #
@@ -4201,7 +4250,7 @@ class Button_functions(Data_Frame):
             print(files[dat.v_num])
 
             dat.vid1 = dat.wd + "/" +files[dat.v_num]
-
+            dat.vid_button = -1
             Menu_functions_VIDEO.load_avi(self,dat,dat.vid1)
 
     #         dat.vid = cv2.VideoCapture(dat.vid1)

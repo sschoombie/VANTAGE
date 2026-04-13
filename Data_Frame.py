@@ -90,6 +90,7 @@ class Data_Frame:
         self.key = 0                      #Holder for the key being pressed on the keyboard
         self.vid_creation_time = tk.BooleanVar()  #TEMP FIX - this is for AVI files where the creation date is the first frame, not the last
         self.cam_type = tk.StringVar(value="ZS")              #Camera type - the default is Zoolog Solutions camera
+        self.vid_button = 0               #Toggle to indicate if the next/prev button has been clicked - this is used for timing problems in the video files
         
         #Variables used in interactive widgets (e.g. sliders, or checkboxes)
         self.annotate_selection = tk.BooleanVar()      #Checkbox menu to decide if a single point should be annotated
