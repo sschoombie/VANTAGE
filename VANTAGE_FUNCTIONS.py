@@ -12,6 +12,7 @@ try:
 except ModuleNotFoundError:
     import pickle
 
+
 #from scipy.signal import savgol_filter
 from scipy import signal
 
@@ -67,6 +68,67 @@ except:
 
 from tensorflow.keras.models import load_model
 
+# --- helpers ---
+def lmax(Xcurr):
+    Xcurr = np.asarray(Xcurr)
+    fX = Xcurr.copy()
+    
+    # forward shift
+    fX[:-1] = Xcurr[1:]
+    
+    # elementwise max
+    return np.maximum(Xcurr, fX)
+
+
+def lmin(Xcurr):
+    Xcurr = np.asarray(Xcurr)
+    fX = Xcurr.copy()
+    
+    # backward shift
+    fX[1:] = Xcurr[:-1]
+    
+    # elementwise min
+    return np.minimum(Xcurr, fX)
+
+
+# --- main functions ---
+def lll_u(x, n):
+    Xcurr = np.asarray(x).copy()
+    
+    if n > 0:
+        # forward max iterations
+        for _ in range(n):
+            Xcurr = lmax(Xcurr)
+        
+        # backward min iterations
+        for _ in range(n):
+            Xcurr = lmin(Xcurr)
+    
+    return Xcurr
+
+
+def lll_l(x, n):
+    Xcurr = np.asarray(x).copy()
+    
+    if n > 0:
+        # backward min iterations
+        for _ in range(n):
+            Xcurr = lmin(Xcurr)
+        
+        # forward max iterations
+        for _ in range(n):
+            Xcurr = lmax(Xcurr)
+    
+    return Xcurr
+
+
+def bpu(x, k, m):
+    return lll_u(x, k) - lll_u(x, m)
+
+
+def bpl(x, k, m):
+    return lll_l(x, k) - lll_l(x, m)
+
 class Menu_functions_FILE(Data_Frame):
 
     def load_csv(self,dat):
@@ -120,10 +182,10 @@ class Menu_functions_FILE(Data_Frame):
                         
             dat.nrow = np.array(dat.df).shape[0]
 
-            if(dat.current_label_col in dat.df):
-                pass
-            else:
-                dat.df[dat.current_label_col] = 0
+            # if(dat.current_label_col in dat.df):
+                # pass
+            # else:
+                # dat.df[dat.current_label_col] = 0
 
             wtemp.destroy() #Remove the prompt window
 
@@ -214,38 +276,56 @@ class Menu_functions_FILE(Data_Frame):
             pre,ext = os.path.splitext(dat.filename)
             out_file = pre + "_OUT.csv"
 
-            #Create the OUT file headings
-            dat.df["vid"] = "NA"
-            dat.df["frame"] = "NA"
-            dat.df["vid_time"] = "NA"
-            dat.df["cfilter"] = 0
-            if('BEHAV' in dat.df):
-                pass
-            else:
-                dat.df['BEHAV'] = 0
+            
 
             #Check if the file exists
             if os.path.exists(out_file):
                 temp_df = pd.read_csv(out_file)
                 # dat.df = dat.df.join(temp_df)
-                dat.df.iloc[:,dat.df.columns.get_loc(dat.current_label_col)] = temp_df.iloc[:,temp_df.columns.get_loc(dat.current_label_col)]
+                # dat.df.iloc[:,dat.df.columns.get_loc(dat.current_label_col)] = temp_df.iloc[:,temp_df.columns.get_loc(dat.current_label_col)]
 
-                dat.df.iloc[:,dat.df.columns.get_loc("vid")] = temp_df.iloc[:,temp_df.columns.get_loc("vid")]
+                # dat.df.iloc[:,dat.df.columns.get_loc("vid")] = temp_df.iloc[:,temp_df.columns.get_loc("vid")]
 
-                dat.df.iloc[:,dat.df.columns.get_loc("frame")] = temp_df.iloc[:,temp_df.columns.get_loc("frame")]
+                # dat.df.iloc[:,dat.df.columns.get_loc("frame")] = temp_df.iloc[:,temp_df.columns.get_loc("frame")]
 
-                dat.df.iloc[:,dat.df.columns.get_loc("vid_time")] = temp_df.iloc[:,temp_df.columns.get_loc("vid_time")]
+                # dat.df.iloc[:,dat.df.columns.get_loc("vid_time")] = temp_df.iloc[:,temp_df.columns.get_loc("vid_time")]
 
-                if('BEHAV' in temp_df):
-                    dat.df.iloc[:,dat.df.columns.get_loc("BEHAV")] = temp_df.iloc[:,temp_df.columns.get_loc("BEHAV")]
-                if('PCE_dive' in temp_df):
-                    dat.df["PCE_dive"] = temp_df.iloc[:,temp_df.columns.get_loc("PCE_dive")]
+                # if('BEHAV' in temp_df):
+                    # dat.df.iloc[:,dat.df.columns.get_loc("BEHAV")] = temp_df.iloc[:,temp_df.columns.get_loc("BEHAV")]
+                # if('PCE_dive' in temp_df):
+                    # dat.df["PCE_dive"] = temp_df.iloc[:,temp_df.columns.get_loc("PCE_dive")]
+                             
+                # Only update columns in dat.df that are in temp_df but not already in dat.df
+                cols_to_update = [col for col in temp_df.columns if col not in dat.df.columns]
+
+                # Update only the non-conflicting columns
+                dat.df[cols_to_update] = temp_df[cols_to_update]
+                
                 dat.out_file_loaded = True
                 try:
                     dat.btn_2['state'] = 'disabled' #Cheatsheet button disable
                 except:
                     pass
                 print("OUT file loaded")
+            else:
+                # Ensure label column exists
+                print(dat.df.columns)
+                if dat.current_label_col not in dat.df.columns:
+                    print("creating new PCE column: " + dat.current_label_col)
+                    dat.df[dat.current_label_col] = 0
+
+                # Columns that should exist with default values
+                default_cols = {
+                    "vid": "NA",
+                    "frame": "NA",
+                    "vid_time": "NA",
+                    "cfilter": 0,
+                    "BEHAV": 0
+                }
+
+                for col, default_val in default_cols.items():
+                    if col not in dat.df.columns:
+                        dat.df[col] = default_val
 
             ###############
             # 2- DIVES file #
@@ -1502,7 +1582,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
             #Find the sampling rate
             date_diffs = dat.df[dat.time_col_string].diff()
-            sampling_rate = int(round(1/(date_diffs).mean().total_seconds(),0))
+            sampling_rate = int(round(1/(date_diffs).median().total_seconds(),0))
             print("Sampling rate is: " + str(sampling_rate))
             rolling_window1 = sampling_rate
             rolling_window2 = 8
@@ -1512,7 +1592,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
             dat.df["ax_s"] = dat.df[s_ax].rolling(rolling_window1,center = True).mean()
             dat.df["ay_s"] = dat.df[s_ay].rolling(rolling_window1,center = True).mean()
             dat.df["az_s"] = dat.df[s_az].rolling(rolling_window1,center = True).mean()
-
+            
             dat.df["ax_std"] = dat.df[s_ax].rolling(rolling_window2,center = True).std()
             dat.df["ay_std"] = dat.df[s_ay].rolling(rolling_window2,center = True).std()
             dat.df["az_std"] = dat.df[s_az].rolling(rolling_window2,center = True).std()
@@ -1535,39 +1615,53 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
             #Metrics calculation
             dat.df["pitch"] = np.arctan2(dat.df.loc[:,"ax_s"], np.sqrt(dat.df.loc[:,"ay_s"]**2 + dat.df.loc[:,"az_s"]**2))#*180/np.pi
+            dat.df["pitch_norm"] = ( dat.df["pitch"] -  dat.df["pitch"].mean())
+            dat.df["pitch_raw"] = np.arctan2(dat.df.loc[:,s_ax], np.sqrt(dat.df.loc[:,s_ay]**2 + dat.df.loc[:,s_az]**2))#*180/np.pi
+            dat.df["pitch_bpl"] = bpl(dat.df["pitch"].to_numpy(), k=1, m=50)
+            dat.df["pitch_raw_bpl"] = bpl(dat.df["pitch_raw"].to_numpy(), k=1, m=50)
+            dat.df["pitch__norm_bpl"] = bpl(dat.df["pitch_norm"].to_numpy(), k=1, m=50)
+            dat.df["pitch_deg"] = np.arctan2(dat.df.loc[:,"ax_s"], np.sqrt(dat.df.loc[:,"ay_s"]**2 + dat.df.loc[:,"az_s"]**2))*180/np.pi
             dat.df["roll"] = np.arctan2(dat.df.loc[:,"ay_s"], np.sqrt(dat.df.loc[:,"ax_s"]**2 + dat.df.loc[:,"az_s"]**2))#*180/np.pi
             dat.df["vedba"] = np.sqrt(dat.df["ax_d"]**2 + dat.df["ay_d"]**2 + dat.df["az_d"]**2)
             dat.df["vedba_std"] = dat.df['vedba'].rolling(rolling_window2,center = True).std()
-
+            dat.df["vesba"] = np.sqrt(dat.df["ax_s"]**2 + dat.df["ay_s"]**2 + dat.df["az_s"]**2)
+            dat.df["vesba_bpu"] = bpu(dat.df["vesba"].to_numpy(), k=1, m=50)
+            dat.df["odba"] = np.sqrt(dat.df[s_ax]**2 + dat.df[s_ax]**2 + dat.df[s_ax]**2)
+            # dat.df["odba_bpl"] = bpl(dat.df["odba"].to_numpy(), k=1, m=50)
+            # dat.df["odba_bpu"] = bpu(dat.df["odba"].to_numpy(), k=1, m=50)
+            dat.df["az_s_bpl"] = bpl(dat.df["az_s"].to_numpy(), k=1, m=50)
+            
+            
             #Rolling SD of pitch (for foraging dive estimation) over 2 seconds
             dat.df["pitch_rm"] = dat.df['pitch'].rolling((rolling_window1*2), center = True).std()
+            dat.df["pitch_deg_rm"] = dat.df['pitch_deg'].rolling((rolling_window1*2), center = True).std()
             
-            # #Jerk ACC
-            # jerk = np.sqrt(
-                # np.diff(dat.df[s_ax])**2 +
-                # np.diff(dat.df[s_ay])**2 +
-                # np.diff(dat.df[s_az])**2
-            # )
+            #Jerk ACC
+            jerk = np.sqrt(
+                np.diff(dat.df[s_ax])**2 +
+                np.diff(dat.df[s_ay])**2 +
+                np.diff(dat.df[s_az])**2
+            )
 
-            # dat.df["jerk"] = np.concatenate([[np.nan], jerk])
+            dat.df["jerk"] = np.concatenate([[np.nan], jerk])
             
-            # #Jerk ACC smooth
-            # jerk_s = np.sqrt(
-                # np.diff(dat.df["ax_s"])**2 +
-                # np.diff(dat.df["ay_s"])**2 +
-                # np.diff(dat.df["az_s"])**2
-            # )
+            #Jerk ACC smooth
+            jerk_s = np.sqrt(
+                np.diff(dat.df["ax_s"])**2 +
+                np.diff(dat.df["ay_s"])**2 +
+                np.diff(dat.df["az_s"])**2
+            )
 
-            # dat.df["jerk_s"] = np.concatenate([[np.nan], jerk_s])
+            dat.df["jerk_s"] = np.concatenate([[np.nan], jerk_s])
             
-            # #Jerk ACC SD
-            # jerk_sd = np.sqrt(
-                # np.diff(dat.df["ax_std"])**2 +
-                # np.diff(dat.df["ay_std"])**2 +
-                # np.diff(dat.df["az_std"])**2
-            # )
+            #Jerk ACC SD
+            jerk_sd = np.sqrt(
+                np.diff(dat.df["ax_std"])**2 +
+                np.diff(dat.df["ay_std"])**2 +
+                np.diff(dat.df["az_std"])**2
+            )
 
-            # dat.df["jerk_sd"] = np.concatenate([[np.nan], jerk_sd])
+            dat.df["jerk_sd"] = np.concatenate([[np.nan], jerk_sd])
             
             
 
@@ -2615,7 +2709,10 @@ class Menu_functions_ANALYSIS(Data_Frame):
                 temp_dat = dat.df.loc[np.arange(0,(idx-2))]
                 # temp_dat = dat.df.loc[np.arange(dat.vid_idx_start,(idx-2))]
 
-            temp_dat = temp_dat[temp_dat[dat.current_label_col].isin(temp_ann)].reset_index()
+            temp_dat = temp_dat[temp_dat[
+                dat.current_label_col].isin(temp_ann) 
+                &temp_dat["vid"].notna()
+            ].reset_index()
             print(str(len(temp_dat)) + " annotation present")
 
             #Choose the next available annotations and check if the video file is correct
@@ -2740,13 +2837,17 @@ class Menu_functions_ANALYSIS(Data_Frame):
             
     def acc_rotate(self,dat):
         print("ACC rotated")
+        
+    
+        
+
 
 class Menu_functions_EXPORT(Data_Frame):
     def export_events(self,dat):
         pre,ext = os.path.splitext(dat.filename)
         out_file = pre + "_OUT.csv"
         dat.df[dat.current_label_col] = pd.to_numeric(dat.df[dat.current_label_col],errors='coerce')
-        pce_out = dat.df[[dat.current_label_col,"vid","frame","vid_time","BEHAV"]]
+        pce_out = dat.df[dat.all_labels + ["vid", "frame", "vid_time", "BEHAV"]]
 
         #Create a new window to show a prompt to wait
         #New temp window
@@ -3337,8 +3438,52 @@ class Menu_functions_EXPORT(Data_Frame):
 
 class Menu_functions_ANNOTATE(Data_Frame):
     def choose_annotation_col(self,dat):
-    #Create a new column for annotations or select a previously created column
-        pass
+        wtemp = tk.Toplevel(self)
+        wtemp.title("Please select the Annotation column")
+        wtemp.geometry("600x400")
+        wtemp.attributes('-topmost',True)
+        tk.Label(wtemp, text="New column name:").pack(padx=10, pady=5)
+        entry = tk.Entry(wtemp)
+        entry.pack(padx=10, pady=5)
+        
+            
+        #Function when the "Apply button is pressed"
+        #Once the column name and format has been chosen we convert the column to POSIX
+        def tapply():
+            if not hasattr(dat, "all_labels"):
+                dat.all_labels = ["PCE"]
+                
+            col_name = entry.get().strip()
+
+            if not col_name:
+                tk.messagebox.showwarning("Invalid", "Column name cannot be empty")
+                return
+
+            if col_name in dat.df.columns:
+                tk.messagebox.showwarning("Exists", f"Column '{col_name}' already exists")
+                dat.current_label_col = col_name
+                if col_name not in dat.all_labels:
+                    dat.all_labels.append(col_name)
+                    print("New label column: " + str(col_name) + " added")
+                print(dat.all_labels)
+                #win.destroy()
+                #return
+            else:
+                # Create new column with default value 0
+                if col_name not in dat.all_labels:
+                    dat.all_labels.append(col_name)
+                    print("New label column: " + str(col_name) + " added")
+                    print(dat.all_labels)
+                dat.current_label_col = col_name
+                dat.df[dat.current_label_col] = 0
+                
+            wtemp.destroy()
+
+        #Create the button and add the
+        tk.Button(wtemp, text="Apply", command=tapply).pack(pady=10)
+        
+        
+        
 
     def selection_warning(self,dat):
         #Check which option is chosen from the menu and print the approriate warning
@@ -3346,6 +3491,300 @@ class Menu_functions_ANNOTATE(Data_Frame):
             showinfo(title='Annotate method',message='Annotation will be made BETWEEN SELECTED points')
         elif ~dat.annotate_selection.get():
             showinfo(title='Annotate method',message='Annotation will be made on SINGLE points')
+    def predict_pce(self,dat):
+        def segment_per_dive(df, dives, par, progress_every=10):
+    
+            X_all = []
+            y_all = []
+
+            start_time = time.time()
+            print(f"Starting segmentation of {len(dives)} dives\n")
+
+            # drop NA dives
+            df = df[df[par["dive_column"]].notna()]
+            
+            # split by dive
+            dives_split = dict(tuple(df.groupby(par["dive_column"])))
+
+            for k, (dive_id, df_dive) in enumerate(dives_split.items(), start=1):
+
+                # choose segmentation mode
+                if par["balance"]:
+                    out = segment_window_balanced(df_dive, par)
+                else:
+                    out = segment_window(df_dive, par)  # assumed defined elsewhere
+
+                if out["X"] is not None:
+                    X_all.extend(out["X"])
+                    y_all.extend(out["y"])
+
+                # progress
+                if k % progress_every == 0 or k == len(dives_split):
+                    elapsed = time.time() - start_time
+                    pct = k / len(dives_split)
+                    eta = elapsed / pct - elapsed
+
+                    print(f"Dive {k} / {len(dives_split)} ({pct*100:.1f}%)")
+                    print(f"Elapsed: {time.strftime('%H:%M:%S', time.gmtime(elapsed))}")
+                    print(f"ETA:     {time.strftime('%H:%M:%S', time.gmtime(eta))}\n")
+
+            # convert to numpy array
+            X = np.stack(X_all) if len(X_all) > 0 else None
+            y = np.array(y_all)
+
+            total_time = time.time() - start_time
+            print(f"\nFinished. Total time: {time.strftime('%H:%M:%S', time.gmtime(total_time))}")
+
+            return {"X": X, "y": y}
+            
+        def segment_window_balanced(df, par):
+    
+            segments = []
+            labels = []
+
+            n = len(df)
+            window = par["window"]
+            step = par["step"]
+
+            if n < window:
+                return {"X": None, "y": None}
+
+            starts = np.arange(0, n - window + 1, step)
+
+            prev_s = -1
+
+            for s in starts:
+                if prev_s > 0:
+                    s = prev_s
+                if s < 0:
+                    continue
+
+                end = s + window
+                if end > n:
+                    continue
+
+                rng = slice(s, end)
+                segment = df.iloc[rng][par["segment_columns"]].values
+
+                vals = df.iloc[rng][par["label_column"]].dropna().values
+
+                if len(vals) == 0:
+                    label = np.nan
+
+                elif np.max(vals) == 1:
+                    # refine around positive event
+                    pce_idx = np.where(vals == 1)[0][0]
+                    pce_loc = s + pce_idx - window
+                    pce_loc = max(pce_loc, 0)
+
+                    temp_starts = np.arange(
+                        pce_loc,
+                        pce_loc + window,
+                        par["balance_step"]
+                    )
+
+                    prev_s = temp_starts[-1] + par["balance_step"]
+
+                    for stemp in temp_starts:
+                        stemp = int(stemp)
+                        if stemp < 0 or stemp + window > n:
+                            continue
+
+                        rng = slice(stemp, stemp + window)
+                        seg = df.iloc[rng][par["segment_columns"]].values
+
+                        vals2 = df.iloc[rng][par["label_column"]].dropna().values
+
+                        if len(vals2) == 0:
+                            label2 = np.nan
+                        else:
+                            if par["label_method"] == "max":
+                                label2 = np.max(vals2)
+                            else:
+                                label2 = np.bincount(vals2.astype(int)).argmax()
+
+                        segments.append(seg)
+                        labels.append(label2)
+
+                else:
+                    prev_s = -1
+
+                    if par["label_method"] == "max":
+                        label = np.max(vals)
+                    else:
+                        label = np.bincount(vals.astype(int)).argmax()
+
+                    segments.append(segment)
+                    labels.append(label)
+
+            if len(segments) == 0:
+                return {"X": None, "y": None}
+
+            X = np.stack(segments)
+            y = np.array(labels)
+
+            return {"X": X, "y": y}
+            
+            
+        print("Training TCN")
+        temp_dives = dat.df.loc[
+                                (dat.df["vid"].str.endswith(".mp4", na=False)),
+                                "dive_num"
+                            ].unique()
+        print(str(len(temp_dives)) + " dives available")
+            
+        if "X" in dat.df.columns:
+            dat.df = dat.df.rename(columns={
+                "X": "accX",
+                "Y": "accY",
+                "Z": "accZ"
+            })
+        def normalize_acc(df, clip=2):
+   
+            df = df.copy()  # avoid modifying original DataFrame
+            
+            def scale(series):
+                return (series - series.mean()) / series.std(ddof=1) 
+            
+            # Clip and scale each axis
+            df["X_std"] = scale(np.clip(df["accX"], -clip, clip))
+            df["Y_std"] = scale(np.clip(df["accY"], -clip, clip))
+            df["Z_std"] = scale(np.clip(df["accZ"], -clip, clip))
+            
+            return df
+        dat.df = normalize_acc(dat.df,2)
+        
+        par = {
+                    "dive_column": "dive_id",       
+                    "segment_columns": ["X_std","Y_std","Z_std", "PCE2", dat.time_col_string],  
+                    "model_columns": ["X_std","Y_std","Z_std"],  
+                    "label_column": "PCE2",      
+                    "window": 8,
+                    "step": 8,
+                    "balance": True,        
+                    "balance_step": 1 ,
+                    "label_method": "max"
+                }
+        dat.segments = segment_per_dive(dat.df, temp_dives, par)
+        print("segmentation done")
+        
+        # -----------------------------
+        # 1. Match model columns
+        # -----------------------------
+        model_idx = [par["segment_columns"].index(col) for col in par["model_columns"]]
+
+        # -----------------------------
+        # 2. Subset features
+        # -----------------------------
+        X_sub = dat.segments["X"][:, :, model_idx]
+        print(X_sub.dtype)
+        print(type(X_sub[0,0,0]))
+        X_sub = np.asarray(X_sub, dtype=np.float32)
+        # -----------------------------
+        # 3. Valid rows (no NA in X, valid y)
+        # -----------------------------
+        valid_rows = ~np.isnan(X_sub).any(axis=(1, 2))
+        valid_y = ~np.isnan(dat.segments["y"])
+
+        y = dat.segments["y"]
+
+        # -----------------------------
+        # 4. Separate classes (FIXED: include validity filters)
+        # -----------------------------
+        train_rows_1 = np.where((y == 1) & valid_y & valid_rows)[0]
+        train_rows_0_all = np.where((y == 0) & valid_y & valid_rows)[0]
+
+        # -----------------------------
+        # 5. Downsample majority class
+        # -----------------------------
+        if len(train_rows_1) > 0 and len(train_rows_0_all) / len(train_rows_1) > 5:
+            train_rows_0 = np.random.choice(
+                train_rows_0_all,
+                size=len(train_rows_1) * 5,
+                replace=False
+            )
+        else:
+            train_rows_0 = train_rows_0_all
+
+        # -----------------------------
+        # 6. Combine train indices
+        # -----------------------------
+        train_rows_0 = train_rows_0_all
+        train_rows = np.concatenate([train_rows_1, train_rows_0])
+
+        # -----------------------------
+        # 7. Build training set
+        # -----------------------------
+        X_train = dat.segments["X"][train_rows][:, :, model_idx].astype(np.float32)
+        y_train = y[train_rows]
+
+        # -----------------------------
+        # 8. Shuffle (recommended)
+        # -----------------------------
+        # perm = np.random.permutation(len(y_train))
+        # X_train = X_train[perm]
+        # y_train = y_train[perm]
+        print(X_train.shape)
+        print(y_train.shape)
+        print("Class balance:", np.bincount(y_train.astype(int)))
+        #print(dat.segments["X"].shape == (n_samples, window, n_features))
+        from tensorflow.keras import layers, Model, Input
+        import tensorflow as tf
+        def tcn_block(x, filters, kernel_size, dilation_rate, dropout):
+
+            x = layers.Conv1D(
+                filters=filters,
+                kernel_size=kernel_size,
+                dilation_rate=dilation_rate,
+                padding="causal",
+                activation="relu"
+            )(x)
+
+            x = layers.Dropout(dropout)(x)
+
+            return x
+        def build_tcn(input_shape, ifilters=32, ikernel=3, idropout=0.1):
+
+            tf.random.set_seed(788)
+
+            inputs = Input(shape=input_shape)
+
+            x = inputs
+
+            x = tcn_block(x, ifilters, ikernel, 1, idropout)
+            x = tcn_block(x, ifilters, ikernel, 2, idropout)
+            x = tcn_block(x, ifilters, ikernel, 4, idropout)
+
+            x = layers.GlobalAveragePooling1D()(x)
+
+            outputs = layers.Dense(1, activation="sigmoid")(x)
+
+            model = Model(inputs, outputs)
+
+            return model
+        f = 64
+        k = 2
+        d = 0.2
+        lr = 0.003
+
+        dat.temp_model = build_tcn(input_shape=(8, 3), ifilters=f, ikernel=k, idropout=d)
+
+        dat.temp_model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=lr),
+            loss="binary_crossentropy",
+            metrics=["accuracy"]
+        )
+
+        dat.temp_model.fit(
+            X_train,
+            y_train,
+            epochs=20,
+            batch_size=128,
+            # validation_split=0.2,
+            verbose=2
+        )
+        print("DONE training") 
+        
 
 class Menu_functions_CHEATSHEETS(Data_Frame):
     def view_data(self,dat):
@@ -3552,6 +3991,12 @@ class Menu_functions_MODEL(Data_Frame):
             .groupby(dat.df["dive_num"])
             .transform("sum")
         )
+        
+    def train_TCN(self,data):
+        pass
+        
+        
+        
     def predict_TCN(self,dat):
         print("predicting")
         def normalize_acc(df, clip=2):
@@ -3559,8 +4004,7 @@ class Menu_functions_MODEL(Data_Frame):
             df = df.copy()  # avoid modifying original DataFrame
             
             def scale(series):
-                """Standardize series like R's scale()"""
-                return (series - series.mean()) / series.std(ddof=1)  # ddof=1 for sample std like R
+                return (series - series.mean()) / series.std(ddof=1) 
             
             # Clip and scale each axis
             df["X_std"] = scale(np.clip(df["accX"], -clip, clip))
@@ -3580,26 +4024,26 @@ class Menu_functions_MODEL(Data_Frame):
             
             return np.array(windows)
             
-        def unpack_predictions(predictions, X_meta, step):
+        # def unpack_predictions(predictions, X_meta, step):
     
-            num_windows, window_size = X_meta.shape[:2]
+            # num_windows, window_size = X_meta.shape[:2]
             
-            rows = []
-            for i in range(num_windows):
-                # Map each window prediction to the *first row of the window*
-                timestamp = pd.to_datetime(X_meta[i, 0, 0], utc=True)
-                tagid     = X_meta[i, 0, 1]
+            # rows = []
+            # for i in range(num_windows):
+                # # Map each window prediction to the *first row of the window*
+                # timestamp = pd.to_datetime(X_meta[i, 0, 0], utc=True)
+                # tagid     = X_meta[i, 0, 1]
                 
-                # Handle multiple output predictions
-                if predictions.ndim == 1:
-                    pred_value = predictions[i]
-                else:
-                    pred_value = predictions[i].tolist()
+                # # Handle multiple output predictions
+                # if predictions.ndim == 1:
+                    # pred_value = predictions[i]
+                # else:
+                    # pred_value = predictions[i].tolist()
                 
-                rows.append([timestamp, tagid, pred_value])
+                # rows.append([timestamp, tagid, pred_value])
             
-            df_pred = pd.DataFrame(rows, columns=[dat.time_col_string, "TagID", "Prediction"])
-            return df_pred
+            # df_pred = pd.DataFrame(rows, columns=[dat.time_col_string, "TagID", "Prediction"])
+            # return df_pred
         
         def to_series(windows, step):
             windows = np.asarray(windows)
@@ -3616,6 +4060,7 @@ class Menu_functions_MODEL(Data_Frame):
         
 
         model = load_model("models/TCN.keras")
+        #model = dat.temp_model
         print("model loaded")
         if "X" in dat.df.columns:
             dat.df = dat.df.rename(columns={
@@ -3648,7 +4093,7 @@ class Menu_functions_MODEL(Data_Frame):
         pred_prob = np.repeat(predictions, istep)
         pred_values = np.repeat(pred_binary, istep)
         pred_times = to_series(X_time, step=istep)
-
+        
         pred_df = pd.DataFrame({
             dat.time_col_string: pred_times,
             "Prediction": pred_values,
@@ -3658,6 +4103,7 @@ class Menu_functions_MODEL(Data_Frame):
         #pred_df["Timestamp"] = pd.to_datetime(pred_df["Timestamp"], utc=True)
 
         # Merge predictions into original DataFrame
+        dat.df = dat.df.drop(columns=["Prediction","Prediction_prob"], errors="ignore")
         dat.df = dat.df.merge(pred_df, on=dat.time_col_string, how="left")   
         dat.df["Prediction"] = dat.df["Prediction"].fillna(0)
         dat.df["Prediction_prob"] = dat.df["Prediction_prob"].fillna(0)
@@ -3668,6 +4114,7 @@ class Menu_functions_MODEL(Data_Frame):
         pred_file = pre + "_PRED.csv"
         pred_out = dat.df[["Prediction", "Prediction_prob"]]
         pred_out.to_csv(pred_file,index = False)
+        print("DONE Predicting")
         
     def model_YOLO(self,dat):
         file_types = (('pt files', '*.pt'),('All files', '*.*'))
@@ -3682,14 +4129,16 @@ class Menu_functions_MODEL(Data_Frame):
             dat.yolo_loaded = 1
             print("SUCCESSFULLY LOADED YOLO MODEL")
         except:
+            dat.yolo_loaded = 0
             print("YOLO model FAILED")
 
     def run_YOLO(self,dat):
+        files = sorted(os.listdir(dat.wd))
 
         #Check if the YOLO model is loaded
         if(dat.yolo_loaded ==1):
-
-            #assign columns to the dataframe
+            
+             #assign columns to the dataframe
             if 'Krill' not in dat.df:
                 dat.df = dat.df.assign(Krill = 0)
             if 'Penguin' not in dat.df:
@@ -3734,293 +4183,297 @@ class Menu_functions_MODEL(Data_Frame):
             dat.temp_done = False
             while dat.temp_done == False:
                 self.update()
+                
+            while(dat.v_num < len(files)):
+        
+                Button_functions.next_vid(self,dat)
+                
+                #Run though all the video files and predict with the model
+                print("Running YOLO model")
+                dat.byolo = True #Flag to say we are busy with the yolo model
 
-            #Run though all the video files and predict with the model
-            print("Running YOLO model")
-            dat.byolo = True #Flag to say we are busy with the yolo model
+                ##################################
+                #For running the loaded video only
+                ##################################
 
-            ##################################
-            #For running the loaded video only
-            ##################################
+                #Create a new window to show a progress bar and cancel button
+                #New temp window
+                w2 = tk.Toplevel(self)
+                w2.title("YOLO predicting")
+                w2.geometry("400x200")
+                label = tk.Label(w2, text="Please wait - this may take a while")  # create the label
+                label.pack()  # add the label to the window
+                def fcancel(self,dat):
+                    print("YOLO model cancelled")
+                    dat.byolo = False
+                    w2.destroy()
+                #Place a cancel button
+                btn_close = tk.Button(w2,text = "Cancel",command = lambda:fcancel(self,dat))
+                btn_close.pack()
 
-            #Create a new window to show a progress bar and cancel button
-            #New temp window
-            w2 = tk.Toplevel(self)
-            w2.title("YOLO predicting")
-            w2.geometry("400x200")
-            label = tk.Label(w2, text="Please wait - this may take a while")  # create the label
-            label.pack()  # add the label to the window
-            def fcancel(self,dat):
-                print("YOLO model cancelled")
-                dat.byolo = False
-                w2.destroy()
-            #Place a cancel button
-            btn_close = tk.Button(w2,text = "Cancel",command = lambda:fcancel(self,dat))
-            btn_close.pack()
+                #Initiate the progress bar
+                pb = ttk.Progressbar(
+                 w2,
+                 orient='horizontal',
+                 mode='determinate',
+                 length=350
+                 # value = 0
+                 )
+                pb.pack()
+                # #Loop through all the frames and predict while saving the output to the dataframe
+                print("YOLO predicting in progress...")
+                frame = 1
+                dat.vid.set(1,frame)
+                while True:
+                     # Read a frame from the video
+                     ret, image = dat.vid.read()
 
-            #Initiate the progress bar
-            pb = ttk.Progressbar(
-             w2,
-             orient='horizontal',
-             mode='determinate',
-             length=350
-             # value = 0
-             )
-            pb.pack()
-            # #Loop through all the frames and predict while saving the output to the dataframe
-            print("YOLO predicting in progress...")
-            frame = 1
-            dat.vid.set(1,frame)
-            while True:
-                 # Read a frame from the video
-                 ret, image = dat.vid.read()
+                     # print(frame)
+                     pb['value'] = (frame/dat.frame_count)*100
+                     # print(frame_count)
+                     # print((frame/frame_count)*350)
+                     w2.update_idletasks()
 
-                 # print(frame)
-                 pb['value'] = (frame/dat.frame_count)*100
-                 # print(frame_count)
-                 # print((frame/frame_count)*350)
-                 w2.update_idletasks()
+                     #Update the screen
+                     self.update()
+                     #Calculate the millisecond time
+                     time = float(frame)/dat.fps
 
-                 #Update the screen
-                 self.update()
-                 #Calculate the millisecond time
-                 time = float(frame)/dat.fps
+                     #Get the time of the frame
+                     frame_date = dat.vid_start_date + timedelta(seconds = time)
+                     # print(f'Frame date: {frame_date}')
+                     idx = (np.abs(dat.df.iloc[:,dat.time_col] - frame_date)).argmin() #Find the row in the df with the nearest value to ipick
+                     # print(f'idx: {idx}')
+                     if ret:
+                         #Predict on the frame using the loaded model
+                         if dat.yolo_col == "Penguin":
+                             yolo_predict = dat.yolo_model.predict(image,
+                             conf = 0.3,
+                             iou = 0.6,
+                             nms = True,
+                             max_det = 50,
+                             seed = 42,
+                             verbose=False)
+                         elif dat.yolo_col == "Krill":
+                             yolo_predict = dat.yolo_model.predict(image,
+                             conf = 0.5,
+                             verbose=False)
+                         elif dat.yolo_col == "Head":
+                             yolo_predict = dat.yolo_model.predict(image,
+                             conf = 0.3,
+                             iou = 0.6,
+                             nms = True,
+                             max_det = 1,
+                             seed = 42,
+                             verbose=False)
 
-                 #Get the time of the frame
-                 frame_date = dat.vid_start_date + timedelta(seconds = time)
-                 # print(f'Frame date: {frame_date}')
-                 idx = (np.abs(dat.df.iloc[:,dat.time_col] - frame_date)).argmin() #Find the row in the df with the nearest value to ipick
-                 # print(f'idx: {idx}')
-                 if ret:
-                     #Predict on the frame using the loaded model
-                     if dat.yolo_col == "Penguin":
-                         yolo_predict = dat.yolo_model.predict(image,
-                         conf = 0.3,
-                         iou = 0.6,
-                         nms = True,
-                         max_det = 50,
-                         seed = 42,
-                         verbose=False)
-                     elif dat.yolo_col == "Krill":
-                         yolo_predict = dat.yolo_model.predict(image,
-                         conf = 0.5,
-                         verbose=False)
-                     elif dat.yolo_col == "Head":
-                         yolo_predict = dat.yolo_model.predict(image,
-                         conf = 0.3,
-                         iou = 0.6,
-                         nms = True,
-                         max_det = 1,
-                         seed = 42,
-                         verbose=False)
+                         #Read the results
+                         model_result = yolo_predict[0]
 
-                     #Read the results
-                     model_result = yolo_predict[0]
+                         #Classifier
+                         if (model_result.probs is not None) and (dat.yolo_col == "Krill"):
+                             #Extract the results and label
+                             cls =  round(model_result.probs.top1,2)
+                             if cls == 0:
+                                 cls = 1
+                                 cls_name = "Krill"
+                                 font_color = (255, 12, 12) #Red color text
+                                 dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 1
+                             else:
+                                 cls=0
+                                 cls_name = "No_Krill"
+                                 font_color = (36, 255, 12) #Green color text
+                                 dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 0
+                         #Object detector
+                         elif (model_result.boxes is not None and len(model_result.boxes) > 0) and (dat.yolo_col == "Penguin" or dat.yolo_col == "Head"):
+                                 #Find all the bounding boxes
+                                 bboxes = model_result.boxes.xyxy.int().tolist()
+                                 # print(bboxes)
+                                 bboxes2 = model_result.boxes.xywhn.int().tolist()
+                                 #Extract the model results
+                                 cls =  model_result.boxes.cls.int().tolist()
+                                 #Extract the probabilities
+                                 confs =  model_result.boxes.conf.tolist()
+                                 #Mergee the boxes, labels and probs
+                                 bb_cls_cf = [(bb,cl,cf) for cl,bb,cf in zip(cls,bboxes,confs)]
+                                 #Draw the boxes on the image
+                                 box_count = 0
+                                 for  bb,cl,cf in bb_cls_cf:
+                                     b_x1,b_y1,b_x2,b_y2 =  bb
 
-                     #Classifier
-                     if (model_result.probs is not None) and (dat.yolo_col == "Krill"):
-                         #Extract the results and label
-                         cls =  round(model_result.probs.top1,2)
-                         if cls == 0:
-                             cls = 1
-                             cls_name = "Krill"
-                             font_color = (255, 12, 12) #Red color text
-                             dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 1
-                         else:
-                             cls=0
-                             cls_name = "No_Krill"
-                             font_color = (36, 255, 12) #Green color text
-                             dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 0
-                     #Object detector
-                     elif (model_result.boxes is not None and len(model_result.boxes) > 0) and (dat.yolo_col == "Penguin" or dat.yolo_col == "Head"):
-                             #Find all the bounding boxes
-                             bboxes = model_result.boxes.xyxy.int().tolist()
-                             # print(bboxes)
-                             bboxes2 = model_result.boxes.xywhn.int().tolist()
-                             #Extract the model results
-                             cls =  model_result.boxes.cls.int().tolist()
-                             #Extract the probabilities
-                             confs =  model_result.boxes.conf.tolist()
-                             #Mergee the boxes, labels and probs
-                             bb_cls_cf = [(bb,cl,cf) for cl,bb,cf in zip(cls,bboxes,confs)]
-                             #Draw the boxes on the image
-                             box_count = 0
-                             for  bb,cl,cf in bb_cls_cf:
-                                 b_x1,b_y1,b_x2,b_y2 =  bb
+                                     cv2.rectangle(image,(b_x1,b_y1),(b_x2,b_y2), (0, 255, 0), 2)
+                                     cv2.putText(image, str(cf), (b_x1, b_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                                     box_count+=1
+                                 if dat.yolo_col == "Penguin":
+                                     dat.df.iloc[idx,dat.df.columns.get_loc("Penguin")] = box_count
+                                 elif dat.yolo_col == "Head":
+                                     dat.df.iloc[idx,dat.df.columns.get_loc("Head")] = 1-round(b_y1/image.shape[0],2)
+                                     # print(1-round(b_y1/image.shape[0],2))
 
-                                 cv2.rectangle(image,(b_x1,b_y1),(b_x2,b_y2), (0, 255, 0), 2)
-                                 cv2.putText(image, str(cf), (b_x1, b_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-                                 box_count+=1
-                             if dat.yolo_col == "Penguin":
-                                 dat.df.iloc[idx,dat.df.columns.get_loc("Penguin")] = box_count
-                             elif dat.yolo_col == "Head":
-                                 dat.df.iloc[idx,dat.df.columns.get_loc("Head")] = 1-round(b_y1/image.shape[0],2)
-                                 # print(1-round(b_y1/image.shape[0],2))
-
-                 if (frame >= dat.frame_count)  or (dat.byolo == False):
-                     print("end of video")
-                     w2.destroy()
-                     break
-                 else:
-                     frame += 1
+                     if (frame >= dat.frame_count)  or (dat.byolo == False):
+                         print("end of video")
+                         w2.destroy()
+                         break
+                     else:
+                         frame += 1
 
 
-            #For running all files
-            # v_num = -1       #video location in the folder
-            # files = sorted(os.listdir(dat.wd)) #All files within the video directory
-            # # print(files)
-            # #Loop through all the video files
-            # while (v_num < len(files)) and dat.byolo == True:
-            #         v_num = v_num + 1 #Increment the file location
-            #         #Look for the next mp4 file
-            #         while(((not files[v_num].lower().endswith(".mp4")))  and v_num < (len(files)-1)):
-            #             v_num = v_num + 1
-            #         #Stop if no more mp4 files are present
-            #         if not files[v_num].lower().endswith(".mp4"):
-            #             break
-            #         filename = dat.wd +'/' + files[v_num]
-            #         print(filename)
-            #         #Squash image
-            #         if dat.byolo == True:
-            #            #Load the video
-            #            vid = cv2.VideoCapture(filename)
-            #            #Get the frame rate
-            #            fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
-            #            #Get the frame count
-            #            frame_count = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
-            #            #Video Duration
-            #            dur = frame_count*fps
-            #
-            #            #Get the video name (without suffix)
-            #            pre,ext = os.path.splitext(files[v_num])
-            #            frame = 0
-            #
-            #            vid_match = [video[:-4] for video in dat.vt["vid"]].index(pre)
-            #            print(vid_match)
-            #            #Read the video start date-time from the vt file
-            #            if(int(dat.vt["set"][vid_match]) == 1):
-            #                vid_start_date = dat.vt["vid_start_date"][vid_match]
-            #                video_offset = vid_start_date - dat.vt["Timestamp"][vid_match]#
-            #            else:
-            #                dat.byolo = 0
-            #                print("Video time is not synched - can't continue. Please synch the time and try again")
-            #                break
-            #
-            #            #Create a new window to show a progress bar and cancel button
-            #            #New temp window
-            #            w2 = tk.Toplevel(self)
-            #            w2.title("YOLO predicting")
-            #            w2.geometry("400x200")
-            #            label = tk.Label(w2, text="Please wait - this may take a while")  # create the label
-            #            label.pack()  # add the label to the window
-            #            def fcancel(self,dat):
-            #                print("YOLO model cancelled")
-            #                dat.byolo = False
-            #                w2.destroy()
-            #            #Place a cancel button
-            #            btn_close = tk.Button(w2,text = "Cancel",command = lambda:fcancel(self,dat))
-            #            btn_close.pack()
-            #
-            #            #Initiate the progress bar
-            #            pb = ttk.Progressbar(
-            #             w2,
-            #             orient='horizontal',
-            #             mode='determinate',
-            #             length=350
-            #             # value = 0
-            #             )
-            #            pb.pack()
-            #            # #Loop through all the frames and predict while saving the output to the dataframe
-            #            print("YOLO predicting in progress...")
-            #            while True:
-            #                 # Read a frame from the video
-            #                 ret, image = vid.read()
-            #
-            #                 #Increase the frame counter
-            #                 frame += 1
-            #                 # print(frame)
-            #                 pb['value'] = (frame/frame_count)*350
-            #                 # print(frame_count)
-            #                 # print((frame/frame_count)*350)
-            #                 w2.update_idletasks()
-            #
-            #                 #Update the screen
-            #                 self.update()
-            #                 #Calculate the millisecond time
-            #                 time = float(frame)/fps
-            #
-            #                 #Get the time of the frame
-            #                 frame_date = vid_start_date + timedelta(seconds = time)
-            #                 print(f'Frame date: {frame_date}')
-            #                 idx = (np.abs(dat.df.iloc[:,dat.time_col] - frame_date)).argmin() #Find the row in the df with the nearest value to ipick
-            #                 print(f'idx: {idx}')
-            #                 if ret:
-            #                     #Predict on the frame using the loaded model
-            #                     yolo_predict = dat.yolo_model.predict(image, verbose=False)
-            #                     #Read the results
-            #                     model_result = yolo_predict[0]
-            #
-            #                     #Classifier
-            #                     if model_result.probs is not None:
-            #                         #Extract the results and label
-            #                         cls =  round(model_result.probs.top1,2)
-            #                         if cls == 0:
-            #                             cls = 1
-            #                             cls_name = "Krill"
-            #                             font_color = (255, 12, 12) #Red color text
-            #                             dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 1
-            #                         else:
-            #                             cls=0
-            #                             cls_name = "No_Krill"
-            #                             font_color = (36, 255, 12) #Green color text
-            #                             dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 0
-            #                         # #probability values
-            #                         # confs =  round(model_result.probs.top1conf.item(),2)
-            #                         # #Text to be printed on image
-            #                         # text = f'Class: {cls_name}, Conf: {confs}'
-            #                         # font = cv2.FONT_HERSHEY_SIMPLEX
-            #                         # font_scale = 0.9
-            #                         # font_thickness = 2
-            #                         #
-            #                         # # Get text size
-            #                         # text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
-            #                         #
-            #                         # # Calculate the starting point for the text (bottom-right corner)
-            #                         # image_height, image_width = image.shape[:2]
-            #                         # text_position = (image_width - text_size[0] - 10, image_height - 10)
-            #                         #
-            #                         # # Draw the text on the image
-            #                         # cv2.putText(image, text, text_position, font, font_scale, font_color, font_thickness)
-            #
-            #                     #Object detector
-            #                     elif model_result.boxes is not None:
-            #                         #Find all the bounding boxes
-            #                         bboxes = model_result.boxes.xyxy.int().tolist()
-            #                         #Extract the model results
-            #                         cls =  model_result.boxes.cls.int().tolist()
-            #                         #Extract the probabilities
-            #                         confs =  model_result.boxes.conf.tolist()
-            #                         #Mergee the boxes, labels and probs
-            #                         bb_cls_cf = [(bb,cl,cf) for cl,bb,cf in zip(cls,bboxes,confs)]
-            #                         #Draw the boxes on the image
-            #                         box_count = 0
-            #                         for  bb,cl,cf in bb_cls_cf:
-            #                             b_x1,b_y1,b_x2,b_y2 =  bb
-            #                             cv2.rectangle(image,(b_x1,b_y1),(b_x2,b_y2), (0, 255, 0), 2)
-            #                             cv2.putText(image, str(cf), (b_x1, b_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
-            #                             box_count+=1
-            #                         dat.df.iloc[idx,dat.df.columns.get_loc("Penguin")] = box_count
-            #                     else:
-            #                         showinfo("Please load your preferred YOLO model first")
-            #                 if (frame >= frame_count)  or (dat.byolo == False):
-            #                     print("end of video")
-            #                     w2.destroy()
-            #                     break
+                #For running all files
+                # v_num = -1       #video location in the folder
+                # files = sorted(os.listdir(dat.wd)) #All files within the video directory
+                # # print(files)
+                # #Loop through all the video files
+                # while (v_num < len(files)) and dat.byolo == True:
+                #         v_num = v_num + 1 #Increment the file location
+                #         #Look for the next mp4 file
+                #         while(((not files[v_num].lower().endswith(".mp4")))  and v_num < (len(files)-1)):
+                #             v_num = v_num + 1
+                #         #Stop if no more mp4 files are present
+                #         if not files[v_num].lower().endswith(".mp4"):
+                #             break
+                #         filename = dat.wd +'/' + files[v_num]
+                #         print(filename)
+                #         #Squash image
+                #         if dat.byolo == True:
+                #            #Load the video
+                #            vid = cv2.VideoCapture(filename)
+                #            #Get the frame rate
+                #            fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
+                #            #Get the frame count
+                #            frame_count = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
+                #            #Video Duration
+                #            dur = frame_count*fps
+                #
+                #            #Get the video name (without suffix)
+                #            pre,ext = os.path.splitext(files[v_num])
+                #            frame = 0
+                #
+                #            vid_match = [video[:-4] for video in dat.vt["vid"]].index(pre)
+                #            print(vid_match)
+                #            #Read the video start date-time from the vt file
+                #            if(int(dat.vt["set"][vid_match]) == 1):
+                #                vid_start_date = dat.vt["vid_start_date"][vid_match]
+                #                video_offset = vid_start_date - dat.vt["Timestamp"][vid_match]#
+                #            else:
+                #                dat.byolo = 0
+                #                print("Video time is not synched - can't continue. Please synch the time and try again")
+                #                break
+                #
+                #            #Create a new window to show a progress bar and cancel button
+                #            #New temp window
+                #            w2 = tk.Toplevel(self)
+                #            w2.title("YOLO predicting")
+                #            w2.geometry("400x200")
+                #            label = tk.Label(w2, text="Please wait - this may take a while")  # create the label
+                #            label.pack()  # add the label to the window
+                #            def fcancel(self,dat):
+                #                print("YOLO model cancelled")
+                #                dat.byolo = False
+                #                w2.destroy()
+                #            #Place a cancel button
+                #            btn_close = tk.Button(w2,text = "Cancel",command = lambda:fcancel(self,dat))
+                #            btn_close.pack()
+                #
+                #            #Initiate the progress bar
+                #            pb = ttk.Progressbar(
+                #             w2,
+                #             orient='horizontal',
+                #             mode='determinate',
+                #             length=350
+                #             # value = 0
+                #             )
+                #            pb.pack()
+                #            # #Loop through all the frames and predict while saving the output to the dataframe
+                #            print("YOLO predicting in progress...")
+                #            while True:
+                #                 # Read a frame from the video
+                #                 ret, image = vid.read()
+                #
+                #                 #Increase the frame counter
+                #                 frame += 1
+                #                 # print(frame)
+                #                 pb['value'] = (frame/frame_count)*350
+                #                 # print(frame_count)
+                #                 # print((frame/frame_count)*350)
+                #                 w2.update_idletasks()
+                #
+                #                 #Update the screen
+                #                 self.update()
+                #                 #Calculate the millisecond time
+                #                 time = float(frame)/fps
+                #
+                #                 #Get the time of the frame
+                #                 frame_date = vid_start_date + timedelta(seconds = time)
+                #                 print(f'Frame date: {frame_date}')
+                #                 idx = (np.abs(dat.df.iloc[:,dat.time_col] - frame_date)).argmin() #Find the row in the df with the nearest value to ipick
+                #                 print(f'idx: {idx}')
+                #                 if ret:
+                #                     #Predict on the frame using the loaded model
+                #                     yolo_predict = dat.yolo_model.predict(image, verbose=False)
+                #                     #Read the results
+                #                     model_result = yolo_predict[0]
+                #
+                #                     #Classifier
+                #                     if model_result.probs is not None:
+                #                         #Extract the results and label
+                #                         cls =  round(model_result.probs.top1,2)
+                #                         if cls == 0:
+                #                             cls = 1
+                #                             cls_name = "Krill"
+                #                             font_color = (255, 12, 12) #Red color text
+                #                             dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 1
+                #                         else:
+                #                             cls=0
+                #                             cls_name = "No_Krill"
+                #                             font_color = (36, 255, 12) #Green color text
+                #                             dat.df.iloc[idx,dat.df.columns.get_loc("Krill")] = 0
+                #                         # #probability values
+                #                         # confs =  round(model_result.probs.top1conf.item(),2)
+                #                         # #Text to be printed on image
+                #                         # text = f'Class: {cls_name}, Conf: {confs}'
+                #                         # font = cv2.FONT_HERSHEY_SIMPLEX
+                #                         # font_scale = 0.9
+                #                         # font_thickness = 2
+                #                         #
+                #                         # # Get text size
+                #                         # text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+                #                         #
+                #                         # # Calculate the starting point for the text (bottom-right corner)
+                #                         # image_height, image_width = image.shape[:2]
+                #                         # text_position = (image_width - text_size[0] - 10, image_height - 10)
+                #                         #
+                #                         # # Draw the text on the image
+                #                         # cv2.putText(image, text, text_position, font, font_scale, font_color, font_thickness)
+                #
+                #                     #Object detector
+                #                     elif model_result.boxes is not None:
+                #                         #Find all the bounding boxes
+                #                         bboxes = model_result.boxes.xyxy.int().tolist()
+                #                         #Extract the model results
+                #                         cls =  model_result.boxes.cls.int().tolist()
+                #                         #Extract the probabilities
+                #                         confs =  model_result.boxes.conf.tolist()
+                #                         #Mergee the boxes, labels and probs
+                #                         bb_cls_cf = [(bb,cl,cf) for cl,bb,cf in zip(cls,bboxes,confs)]
+                #                         #Draw the boxes on the image
+                #                         box_count = 0
+                #                         for  bb,cl,cf in bb_cls_cf:
+                #                             b_x1,b_y1,b_x2,b_y2 =  bb
+                #                             cv2.rectangle(image,(b_x1,b_y1),(b_x2,b_y2), (0, 255, 0), 2)
+                #                             cv2.putText(image, str(cf), (b_x1, b_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                #                             box_count+=1
+                #                         dat.df.iloc[idx,dat.df.columns.get_loc("Penguin")] = box_count
+                #                     else:
+                #                         showinfo("Please load your preferred YOLO model first")
+                #                 if (frame >= frame_count)  or (dat.byolo == False):
+                #                     print("end of video")
+                #                     w2.destroy()
+                #                     break
 
-            #Save the output
-            if dat.view_only == False:
-                dat.df.loc[:,col_select].to_csv(out_file,index = False)
-                print("YOLO SAVED")
+                #Save the output
+                if dat.view_only == False:
+                    dat.df.loc[:,col_select].to_csv(out_file,index = False)
+                    print("YOLO SAVED")
         else:
          showinfo("Please load your preferred YOLO model first")
 
@@ -4464,6 +4917,228 @@ class Button_functions(Data_Frame):
         self.plot_frame()
     def set_res(self):
         self.video_width = self.res_slider.get()
+    
+    def find_pce(self,dat):
+        #Temporary fix - add this to Data_Frame
+        if hasattr(dat, "auto_pce_pos"):
+            pass
+        else:
+            dat.auto_pce_pos = 0
+        #Find potential PCE based on Depth and Pitch SD
+        idx = (np.abs(dat.df.iloc[:,dat.time_col] - dat.frame_date)).argmin() #Find the row in the df with the nearest value to ipick
+        print(idx)
+        
+        
+        #Get the selected PCE data from the current point onwards
+        
+        dat.df["dive_pitch_sd"] = pd.to_numeric(dat.df["dive_pitch_sd"], errors="coerce")
+        #pitch_rows = dat.df[dat.df["dive_pitch_sd"] > 40 and dat.df["dive_dur"] > 20]
+        pce_dives = dat.df.loc[
+                                (dat.df["dive_pitch_sd"] > 30) & (dat.df["dive_dur"] > 20),
+                                "dive_num"
+                            ].unique()
+                                   
+        # current_dive = dat.df.loc[idx,'dive_num']
+        # print("current dive: " + str(current_dive))
+        next_dive = pce_dives[np.where(pce_dives)[0][0]]
+        print(next_dive)
+        
+        #Find spikes in bpl and keep one point where amplitude exceeds a threshold
+        active = dat.df["pitch_bpl"].ne(0)
+        starts = active & ~active.shift(fill_value=False)
+        spike_id = (active != active.shift(fill_value=False)).cumsum()
+        spike_max = dat.df.groupby(spike_id)["pitch_bpl"].transform("max")
+        
+        
+        mask = (
+            dat.df["vid"].notna() &
+            (dat.df["vid"].str.strip() != "") &
+            (~dat.df["vid"].str.endswith(".mp4", na=False))
+        )
+
+        dat.df.loc[mask, "vid"] = dat.df.loc[mask, "vid"] + ".mp4"
+        mask = (
+            starts
+            & (spike_max > 0.3) #0.3#0.9
+            & (dat.df['dive_num'].isin(pce_dives))
+            & (dat.df["vid"].str.endswith(".mp4"))
+            #& (dat.df["vid"] != "")
+            #& (dat.df["vid"].notna())
+        )
+
+        dat.df["PCE_auto"] = 0
+        dat.df.loc[mask, "PCE_auto"] = 1
+              
+        temp_dat = dat.df.loc[np.arange((idx+2),len(dat.df)-1)]     
+        temp_dat = temp_dat[temp_dat["PCE_auto"] == 1]#.reset_index()
+        print(str(len(temp_dat)) + " annotation present")
+        
+        auto_pce = temp_dat.index[0]
+                            
+        print("##############")
+        print(auto_pce)
+        print(dat.df.iloc[auto_pce,dat.time_col])
+        
+        pce_vid = dat.df.iloc[auto_pce]["vid"]
+        
+        
+        if(dat.vid1 != dat.wd + "/" + pce_vid):
+            dat.vid1 = dat.wd + "/" + pce_vid
+            dat.view_only = True
+            Menu_functions_VIDEO.load_avi(self,dat)
+            dat.view_only = False
+        
+        new_idx = (np.abs(dat.df.iloc[:,dat.time_col] - dat.df.iloc[auto_pce,dat.time_col])).argmin() #Find the row in the df with the nearest value to ipick
+        print(new_idx)
+        array = dat.df.iloc[:,dat.time_col]                  #Define the numeric date column as an array
+        dat.IMU_date = array[new_idx]
+        print(dat.IMU_date)
+        dat.frame = dat.frame + (dat.IMU_date - dat.frame_date).total_seconds()*dat.fps
+        
+        #UPDATE THE PLOT - need to refine this in a function so that I can call this in other places.
+        
+##                ipick = (event.xdata)                  #when mouse is clicked, x-coordinate is saved
+        # ipick = mdates.num2date(event.xdata,utc)
+        # idx = (np.abs(array - ipick)).argmin() #Find the row in the df with the nearest value to ipick
+
+        dat.sub_min = new_idx -50
+        dat.sub_max = new_idx + 50
+        # dat.zoom_ipick = ipick
+        dat.zoom_idx = new_idx
+##            frame_num = int(frame_count*id_perc)
+##            image = plotframe(frame_num)
+##            panel.configure(image = image)
+##            panel.image = image
+        try:
+            dat.vline3.remove()
+        except:
+            pass
+        # dat.vline3 = dat.ax_zoom.axvline(x = ipick,color = 'green')
+        dat.zoom_int = 1
+
+        dat.figure_main.canvas.draw()   #Redraw the figure
+
+        dat.ax_zoom.cla() #Clear axes
+        row_to_use = np.arange(dat.sub_min,dat.sub_max,dat.zoom_int)
+        # Plot each column individually
+        for col in dat.p_cols:
+            # Select the data for the current column
+            x_data = dat.df.iloc[row_to_use, dat.time_col]
+            y_data = dat.df.iloc[row_to_use, col]
+
+            # Exclude NA values
+            non_na_mask = ~y_data.isna()
+            x_data = x_data[non_na_mask]
+            y_data = y_data[non_na_mask]
+
+            # Plot the current column
+            dat.ax_zoom.plot(x_data, y_data, label=dat.df.iloc[:,col].name)
+
+        # dat.ax_zoom.plot(dat.df.iloc[np.arange(dat.sub_min,dat.sub_max,dat.zoom_int),dat.time_col],dat.df.iloc[np.arange(dat.sub_min,dat.sub_max,dat.zoom_int),dat.p_cols],label = dat.df.iloc[:,dat.p_cols].columns) #Plot new values
+        dat.ax_zoom.legend(loc='center left', bbox_to_anchor=(0.9, 0.5))
+        if(dat.zoom_idx > -1 and dat.zoom_idx < dat.sub_max and dat.zoom_idx > dat.sub_min):
+            dat.vline3 = dat.ax_zoom.axvline(x = dat.zoom_ipick,color = 'green')
+        # dat.vline3 = dat.ax_zoom.axvline(x = dat.zoom_ipick,color = 'green')
+        if(dat.dive_max < dat.sub_max and dat.dive_max > dat.sub_min):
+            dat.vline4 = dat.ax_zoom.axvline(x = dat.dive_max_ipick,color = 'blue')
+        if(dat.dive_min < dat.sub_max and dat.dive_min > dat.sub_min):
+            dat.vline5 = dat.ax_zoom.axvline(x = dat.dive_min_ipick,color = 'red')
+##        dat.ax_zoom.axvline(x = dat.df.iloc[dat.dive_max,dat.time_col],color = 'blue')
+##        dat.ax_zoom.axvline(x = dat.df.iloc[dat.dive_min,dat.time_col],color = 'green')
+        dat.figure_zoom.canvas.draw() #Redraw the figure
+    
+        #Move the frame forward to update the plot
+        Keyboard_functions.frame_fwd(self,dat)
+        # temp_dat = temp_dat[temp_dat[dat.current_label_col].isin(temp_ann)].reset_index()
+        # print(str(len(temp_dat)) + " annotation present")
+
+        # #Choose the next available annotations and check if the video file is correct
+        # if sselect == 'next':
+            # pce_select = temp_dat.iloc[0]
+            # print(pce_select.vid)
+            # #Check video
+            # if pce_select.vid != (dat.vid1.split('/')[-1].split(".")[0]+'.mp4'):
+                # pass
+                # dat.view_only = True
+                # dat.vid1 = dat.wd + "/"+ pce_select.vid
+                # Menu_functions_VIDEO.load_avi(self,dat)
+                # dat.view_only = False
+
+            # print("pce_vid: " +dat.wd  +pce_select.vid)
+        # elif sselect == 'prev':
+            # pce_select = temp_dat.iloc[-1]
+            # if pce_select.vid != (dat.vid1.split('/')[-1].split(".")[0]+'.mp4'):
+                # # pass
+                # dat.view_only = True
+                # dat.vid1 = dat.wd + "/"+ pce_select.vid
+                # Menu_functions_VIDEO.load_avi(self,dat)
+                # dat.view_only = False
+
+
+            # print("pce_vid: " +dat.wd  +pce_select.vid)
+        # #Jump to the frame
+        # dat.frame = dat.frame + (pce_select[dat.time_col_string] - dat.frame_date).total_seconds()*dat.fps
+        # #Find the row for the selected annotation
+        # idx = (np.abs(dat.df.iloc[:,dat.time_col] - pce_select[dat.time_col_string])).argmin() #Find the row in the df with the nearest value to ipick
+
+        # #Update the plots
+        # dat.vid.set(1,dat.frame)
+        # Keyboard_functions.plot_frame(self,dat)#dat.plot_frame()
+
+        # ipick = dat.df.loc[idx,dat.time_col_string]
+
+        # dat.sub_min = idx -50
+        # dat.sub_max = idx + 50
+        # dat.zoom_ipick = ipick
+# ##            frame_num = int(frame_count*id_perc)
+# ##            image = plotframe(frame_num)
+# ##            panel.configure(image = image)
+# ##            panel.image = image
+        # try:
+            # dat.vline3.remove()
+        # except:
+            # pass
+        # dat.vline3 = dat.ax_zoom.axvline(x = ipick,color = 'green')
+
+        # dat.ax_zoom.cla() #Clear axes
+        # # Extracting the data for zoom plot
+        # #Specificy the rows to plot
+        # row_to_use = np.arange(dat.sub_min,dat.sub_max,dat.zoom_int)
+        # # Plot each column individually
+        # for col in dat.p_cols:
+            # # Select the data for the current column
+            # x_data = dat.df.iloc[row_to_use, dat.time_col]
+            # y_data = dat.df.iloc[row_to_use, col]
+
+            # # Exclude NA values
+            # non_na_mask = ~y_data.isna()
+            # x_data = x_data[non_na_mask]
+            # y_data = y_data[non_na_mask]
+
+            # # Plot the current column
+            # dat.ax_zoom.plot(x_data, y_data, label=dat.df.iloc[:,col].name)
+        # # dat.ax_zoom.plot(dat.df.iloc[np.arange(dat.sub_min,dat.sub_max,dat.zoom_int),dat.time_col],dat.df.iloc[np.arange(dat.sub_min,dat.sub_max,dat.zoom_int),dat.p_cols],label = dat.df.iloc[:,dat.p_cols].columns) #Plot new values
+        # dat.ax_zoom.legend(loc='center left', bbox_to_anchor=(0.9, 0.5))
+        # dat.vline3 = dat.ax_zoom.axvline(x = ipick,color = 'green')
+        # dat.figure_zoom.canvas.draw() #Redraw the figure
+
+        # #Update Audio plot
+        # if dat.audio_present == True:
+            # dat.sub_window = dat.sub_max - dat.sub_min
+            # dat.aud_window = int((dat.sub_window*640)/2)
+            # dat.aud_point = int(dat.frame*640)
+            # if dat.frame > 1:
+                # dat.aud_min = dat.aud_point - dat.aud_window
+            # else:
+                # dat.aud_min = dat.aud_point
+            # dat.aud_max = dat.aud_point + dat.aud_window
+
+            # dat.ax_audio.cla()
+            # dat.ax_audio.plot(dat.audio.iloc[np.arange(dat.aud_min,dat.aud_max,10),1],dat.audio.iloc[np.arange(dat.aud_min,dat.aud_max,10),0])
+            # dat.vline_aud = dat.ax_audio.axvline(x = dat.audio.iloc[dat.aud_point,1],color = 'red')
+            # dat.figure_audio.canvas.draw()
+
+        # self.update()
 
     #Smoothing output of plotting data
     ##!! REMOVING THIS FOR THE TIME BEING AS IT TAKES UP TOO MUCH MEMORY!!
@@ -4726,7 +5401,8 @@ class Keyboard_functions(Data_Frame):
             # elif key == 'e':
             #     dat.df.iloc[np.arange(dat.dive_min,dat.dive_max),dat.df.columns.get_loc("BEHAV")] = 3
             #     print("marked ascend")
-
+            elif key == 'u':
+                dat.df.iloc[np.arange(dat.dive_min,dat.dive_max),dat.df.columns.get_loc(dat.current_label_col)] = 0
             elif key == 'y':
                 print("axes reset")
                 i_int = round(dat.nrow/2000)
@@ -5022,7 +5698,9 @@ class Keyboard_functions(Data_Frame):
 
         s, image = dat.vid.read()
         dat.image = image.copy()
+        mean_intensity = np.mean(image)
         
+        # print(mean_intensity)
         if s:
 
             time = float(dat.frame)/dat.fps

@@ -1,4 +1,5 @@
 import tkinter as tk
+import importlib
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -18,10 +19,10 @@ elif platform.system() == 'Linux':
 from Data_Frame import Data_Frame, DebugWindow
 
 # from Functions_AVI_Test import *#Menu_functions, Menu_functions_FILE
-from VANTAGE_FUNCTIONS import *#Menu_functions, Menu_functions_FILE
-
+# from VANTAGE_FUNCTIONS import *#Menu_functions, Menu_functions_FILE
+import VANTAGE_FUNCTIONS
 #Version number
-vnum = "_1.02"
+vnum = "_0.03"
 
 class App(tk.Tk):
     def __init__(self):
@@ -112,10 +113,10 @@ class App(tk.Tk):
         ## 5.  Create the menu items and assing functions to them  #
         ###########################################################
         #Add a function to the closure of the window
-        self.protocol('WM_DELETE_WINDOW', lambda:Menu_functions_FILE.f_quit(self,IMU_dat))
+        self.protocol('WM_DELETE_WINDOW', lambda:VANTAGE_FUNCTIONS.Menu_functions_FILE.f_quit(self,IMU_dat))
 
         #Add a function to monitor key presses
-        self.bind("<KeyPress>",lambda event:Keyboard_functions.key_press(event,self,IMU_dat))
+        self.bind("<KeyPress>",lambda event:VANTAGE_FUNCTIONS.Keyboard_functions.key_press(event,self,IMU_dat))
 
         #Initiate the menu
         menu = tk.Menu(self)
@@ -126,13 +127,13 @@ class App(tk.Tk):
         IMU_dat.filemenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=IMU_dat.filemenu)
 
-        IMU_dat.filemenu.add_command(label="Load csv...", command=lambda:Menu_functions_FILE.load_csv(self,IMU_dat))
-        IMU_dat.filemenu.add_command(label="View data", command=lambda:Menu_functions_FILE.view_data(self,IMU_dat))
-        # IMU_dat.filemenu.add_command(label="Load gps...", command=lambda:Menu_functions_FILE.load_gps(IMU_dat))
-        # IMU_dat.filemenu.add_command(label="Import config", command=lambda:Menu_functions_FILE.import_config(IMU_dat))
+        IMU_dat.filemenu.add_command(label="Load csv...", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_FILE.load_csv(self,IMU_dat))
+        IMU_dat.filemenu.add_command(label="View data", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_FILE.view_data(self,IMU_dat))
+        # IMU_dat.filemenu.add_command(label="Load gps...", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_FILE.load_gps(IMU_dat))
+        # IMU_dat.filemenu.add_command(label="Import config", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_FILE.import_config(IMU_dat))
 
         IMU_dat.filemenu.add_separator()
-        IMU_dat.filemenu.add_command(label="Exit", command=lambda:Menu_functions_FILE.f_quit(self,IMU_dat))
+        IMU_dat.filemenu.add_command(label="Exit", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_FILE.f_quit(self,IMU_dat))
 
 
         #############
@@ -140,17 +141,17 @@ class App(tk.Tk):
         #############
         videomenu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Video", menu=videomenu)
-        videomenu.add_command(label="Load video...", command=lambda:Menu_functions_VIDEO.load_avi(self,IMU_dat))
-        videomenu.add_command(label="Set video directory...", command=lambda:Menu_functions_VIDEO.save_wd(IMU_dat))
-        videomenu.add_command(label = "Convert video to mp4", command = lambda: Menu_functions_VIDEO.convert_video(self,IMU_dat))
-        videomenu.add_command(label = "Fix MOV indexing", command = lambda: Menu_functions_VIDEO.fix_video_index(self,IMU_dat))
+        videomenu.add_command(label="Load video...", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_VIDEO.load_avi(self,IMU_dat))
+        videomenu.add_command(label="Set video directory...", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_VIDEO.save_wd(IMU_dat))
+        videomenu.add_command(label = "Convert video to mp4", command = lambda: VANTAGE_FUNCTIONS.Menu_functions_VIDEO.convert_video(self,IMU_dat))
+        videomenu.add_command(label = "Fix MOV indexing", command = lambda: VANTAGE_FUNCTIONS.Menu_functions_VIDEO.fix_video_index(self,IMU_dat))
         camera_menu = tk.Menu(videomenu, tearoff=0)
         videomenu.add_cascade(label="Camera Type", menu=camera_menu)
         camera_menu.add_radiobutton(label="Zoolog Solutions", variable=IMU_dat.cam_type, value="ZS",command=lambda: print(f"Selected camera type: {IMU_dat.cam_type.get()}"))
         camera_menu.add_radiobutton(label="Little Leonardo", variable=IMU_dat.cam_type, value="LL",command=lambda: print(f"Selected camera type: {IMU_dat.cam_type.get()}"))
 
-        videomenu.add_command(label="Load wav...", command=lambda:Menu_functions_VIDEO.load_audio(self,IMU_dat))
-        videomenu.add_checkbutton(label="Creation time (Start)", variable=IMU_dat.vid_creation_time, command=lambda:Menu_functions_VIDEO.creation_time(self,IMU_dat))
+        videomenu.add_command(label="Load wav...", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_VIDEO.load_audio(self,IMU_dat))
+        videomenu.add_checkbutton(label="Creation time (Start)", variable=IMU_dat.vid_creation_time, command=lambda:VANTAGE_FUNCTIONS.Menu_functions_VIDEO.creation_time(self,IMU_dat))
         
         ###############
         # Filter menu #
@@ -158,10 +159,10 @@ class App(tk.Tk):
         # filtermenu = tk.Menu(menu,tearoff = 0)
         # menu.add_cascade(label = "Filters", menu = filtermenu)
         #
-        # filtermenu.add_command(label = "LULU Up", command = lambda:Menu_functions_FILTER.apply_filter(self,IMU_dat,0)) #LULU up
-        # filtermenu.add_command(label = "LULU Down", command = lambda:Menu_functions_FILTER.apply_filter(self,IMU_dat,1)) #LULU down
-        # filtermenu.add_command(label = "Gradient", command = lambda:Menu_functions_FILTER.apply_filter(self,IMU_dat,2)) #Gradient
-        # filtermenu.add_command(label = "Roll mean", command = lambda:Menu_functions_FILTER.apply_filter(self,IMU_dat,3)) #Rolling mean
+        # filtermenu.add_command(label = "LULU Up", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_FILTER.apply_filter(self,IMU_dat,0)) #LULU up
+        # filtermenu.add_command(label = "LULU Down", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_FILTER.apply_filter(self,IMU_dat,1)) #LULU down
+        # filtermenu.add_command(label = "Gradient", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_FILTER.apply_filter(self,IMU_dat,2)) #Gradient
+        # filtermenu.add_command(label = "Roll mean", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_FILTER.apply_filter(self,IMU_dat,3)) #Rolling mean
 
         #############
         # Plot menu #
@@ -169,8 +170,8 @@ class App(tk.Tk):
         plotmenu = tk.Menu(menu,tearoff = 0)
         menu.add_cascade(label = "Plot", menu = plotmenu)
 
-        plotmenu.add_command(label="Choose axes", command=lambda:Menu_functions_PLOT.choose_axes(self,IMU_dat))
-        plotmenu.add_command(label="Plot data", command=lambda:Menu_functions_PLOT.plot_dat(self,IMU_dat))
+        plotmenu.add_command(label="Choose axes", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_PLOT.choose_axes(self,IMU_dat))
+        plotmenu.add_command(label="Plot data", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_PLOT.plot_dat(self,IMU_dat))
 
         # plotmenu.add_command(label = "Spectrogram", command = lambda:Menu_functions_PLOT.plot_spec(self,IMU_dat)) #Spectrogram
         # plotmenu.add_command(label = "Notch filter", command = lambda:Menu_functions_PLOT.notch_filter(IMU_dat)) #Notch filter
@@ -182,18 +183,23 @@ class App(tk.Tk):
 
         analysismenu = tk.Menu(menu,tearoff = 0)
         menu.add_cascade(label = "Functions", menu = analysismenu)
-        analysismenu.add_command(label = "Calculate ACC metrics", command = lambda:Menu_functions_ANALYSIS.acc_metrics(self,IMU_dat)) #Calculate accelerometer metrics (VeDBA etc.)
-        analysismenu.add_command(label = "Find dives", command = lambda:Menu_functions_ANALYSIS.find_dives(self,IMU_dat)) #Find dives automatic method
-        analysismenu.add_command(label = "Video squash", command = lambda:Menu_functions_ANALYSIS.squash_vid(self,IMU_dat)) #Video Squash
-        analysismenu.add_command(label = "Sync dives (Manual)", command = lambda:Menu_functions_ANALYSIS.sync_dives_manual(self,IMU_dat)) #Find dives manual method
-        analysismenu.add_command(label = "Sync dives (AUTO)", command = lambda:Menu_functions_ANALYSIS.synch_dives_auto(self,IMU_dat)) #Find dives manual method
-        analysismenu.add_command(label = "Navigate events", command = lambda:Menu_functions_ANALYSIS.pce_navigate(self,IMU_dat)) #Export ALL PCE images
-        analysismenu.add_checkbutton(label = "Rotate ACC X & Y",variable = IMU_dat.acc_rotate, command = lambda:Menu_functions_ANALYSIS.acc_rotate(self,IMU_dat)) #Rotate the axes for new loggers where X and Y are sign reversed
-
+        analysismenu.add_command(label = "Calculate ACC metrics", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.acc_metrics(self,IMU_dat)) #Calculate accelerometer metrics (VeDBA etc.)
+        analysismenu.add_command(label = "Find dives", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.find_dives(self,IMU_dat)) #Find dives automatic method
+        analysismenu.add_command(label = "Video squash", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.squash_vid(self,IMU_dat)) #Video Squash
+        analysismenu.add_command(label = "Sync dives (Manual)", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.sync_dives_manual(self,IMU_dat)) #Find dives manual method
+        analysismenu.add_command(label = "Sync dives (AUTO)", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.synch_dives_auto(self,IMU_dat)) #Find dives manual method
+        analysismenu.add_command(label = "Navigate events", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.pce_navigate(self,IMU_dat)) #Export ALL PCE images
+        analysismenu.add_checkbutton(label = "Rotate ACC X & Y",variable = IMU_dat.acc_rotate, command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.acc_rotate(self,IMU_dat)) #Rotate the axes for new loggers where X and Y are sign reversed
+        
+        def reload_functions():
+            importlib.reload(VANTAGE_FUNCTIONS)
+            print("Functions reloaded sucessfully")
+        analysismenu.add_command(label = "Reload FUNCTIONS", command = lambda:reload_functions()) #Export ALL PCE images
+        
         #add a submenu under analysis menu
         analysis_submenu = tk.Menu(analysismenu,tearoff = 0)
         analysismenu.add_cascade(label = "CV filters",menu = analysis_submenu)
-        analysis_submenu.add_checkbutton(label = "Horizon detect",variable = IMU_dat.horison_detect, command = lambda:Menu_functions_ANALYSIS.check_horison_column(self,IMU_dat))
+        analysis_submenu.add_checkbutton(label = "Horizon detect",variable = IMU_dat.horison_detect, command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANALYSIS.check_horison_column(self,IMU_dat))
 
         ###################
         # Annotate menu #
@@ -201,8 +207,9 @@ class App(tk.Tk):
         annotatemenu = tk.Menu(menu,tearoff = 0)
         menu.add_cascade(label = "Annotate", menu = annotatemenu)
         #Add a checkbotton to see if
-        annotatemenu.add_command(label = "Annotation column", command = lambda:Menu_functions_ANNOTATE.choose_annotation_col(self,IMU_dat)) #Video Squash
-        annotatemenu.add_checkbutton(label="Annotate selection", variable=IMU_dat.annotate_selection, command = lambda:Menu_functions_ANNOTATE.selection_warning(self,IMU_dat))
+        annotatemenu.add_command(label = "Annotation column", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANNOTATE.choose_annotation_col(self,IMU_dat)) #Video Squash
+        annotatemenu.add_command(label = "Predict New PCE", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANNOTATE.predict_pce(self,IMU_dat)) #Find a new PCE based on pitch SD of Depth and pitch
+        annotatemenu.add_checkbutton(label="Annotate selection", variable=IMU_dat.annotate_selection, command = lambda:VANTAGE_FUNCTIONS.Menu_functions_ANNOTATE.selection_warning(self,IMU_dat))
 
         # annotatemenu.add_command(label="Export events", command=lambda:Menu_functions_EXPORT.export_events(self,IMU_dat))
 
@@ -213,10 +220,10 @@ class App(tk.Tk):
         ###################
         pcemenu = tk.Menu(menu,tearoff = 0)
         menu.add_cascade(label = "Export", menu = pcemenu)
-        pcemenu.add_command(label="Export events", command=lambda:Menu_functions_EXPORT.export_events(self,IMU_dat))
-        pcemenu.add_command(label="Export config", command=lambda:Menu_functions_EXPORT.export_config(IMU_dat))
-        pcemenu.add_command(label = "Export annotated images", command = lambda:Menu_functions_EXPORT.export_annotated(self,IMU_dat)) #Export ALL PCE images
-        pcemenu.add_command(label = "Export YOLO images", command = lambda:Menu_functions_EXPORT.export_yolo(self,IMU_dat)) #Export ALL PCE images
+        pcemenu.add_command(label="Export events", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_EXPORT.export_events(self,IMU_dat))
+        pcemenu.add_command(label="Export config", command=lambda:VANTAGE_FUNCTIONS.Menu_functions_EXPORT.export_config(IMU_dat))
+        pcemenu.add_command(label = "Export annotated images", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_EXPORT.export_annotated(self,IMU_dat)) #Export ALL PCE images
+        pcemenu.add_command(label = "Export YOLO images", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_EXPORT.export_yolo(self,IMU_dat)) #Export ALL PCE images
         # pcemenu.add_command(label = "Export dive images", command = lambda:Menu_functions_EXPORT.export_dive_images(self,IMU_dat)) #Export ALL PCE images
 
         # #########
@@ -224,15 +231,15 @@ class App(tk.Tk):
         # #########
         modelmenu = tk.Menu(menu,tearoff = 0)
         menu.add_cascade(label = "Model", menu = modelmenu)
-        modelmenu.add_command(label = "Load YOLO", command = lambda:Menu_functions_MODEL.model_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
-        modelmenu.add_command(label = "Predict with YOLO", command = lambda:Menu_functions_MODEL.run_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
-        modelmenu.add_command(label = "Predict PCE", command = lambda:Menu_functions_MODEL.predict_TCN(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
-        modelmenu.add_command(label = "Summarise PCE/PRED", command = lambda:Menu_functions_MODEL.summarise_pce(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
+        modelmenu.add_command(label = "Load YOLO", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.model_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
+        modelmenu.add_command(label = "Predict with YOLO", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.run_YOLO(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
+        modelmenu.add_command(label = "Predict PCE", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.predict_TCN(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
+        modelmenu.add_command(label = "Summarise PCE/PRED", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.summarise_pce(self,IMU_dat)) #Load a pre-trained YOLO model and its weights
         #
-        # modelmenu.add_command(label = "Load model", command = lambda:Menu_functions_MODEL.model_load(self,IMU_dat)) #Load a pre-trained model and its weights
-        # modelmenu.add_command(label = "Preprocess data", command = lambda:Menu_functions_MODEL.model_pre_process(self,IMU_dat)) #Pre-process the data to conform to the model parameters
-        # modelmenu.add_command(label = "Predict PCE", command = lambda:Menu_functions_MODEL.model_predict(self,IMU_dat)) #Predict PCE from model
-        # modelmenu.add_command(label = "Plot results", command = lambda:Menu_functions_MODEL.model_results(self,IMU_dat)) #Plot the output (if annotated)
+        # modelmenu.add_command(label = "Load model", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.model_load(self,IMU_dat)) #Load a pre-trained model and its weights
+        # modelmenu.add_command(label = "Preprocess data", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.model_pre_process(self,IMU_dat)) #Pre-process the data to conform to the model parameters
+        # modelmenu.add_command(label = "Predict PCE", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.model_predict(self,IMU_dat)) #Predict PCE from model
+        # modelmenu.add_command(label = "Plot results", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_MODEL.model_results(self,IMU_dat)) #Plot the output (if annotated)
 
         ###################
         # Cheatsheat menu #
@@ -240,9 +247,9 @@ class App(tk.Tk):
         plotmenu = tk.Menu(menu,tearoff = 0)
         menu.add_cascade(label = "Help", menu = plotmenu)
 
-        plotmenu.add_command(label = "Load data", command = lambda:Menu_functions_CHEATSHEETS.analysis_seq(self,IMU_dat)) #Find dives automatic method
-        plotmenu.add_command(label = "Video controls", command = lambda:Menu_functions_CHEATSHEETS.vid_control(self,IMU_dat)) #Video Squash
-        plotmenu.add_command(label = "View data", command = lambda:Menu_functions_CHEATSHEETS.view_data(self,IMU_dat)) #Video Squash
+        plotmenu.add_command(label = "Load data", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_CHEATSHEETS.analysis_seq(self,IMU_dat)) #Find dives automatic method
+        plotmenu.add_command(label = "Video controls", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_CHEATSHEETS.vid_control(self,IMU_dat)) #Video Squash
+        plotmenu.add_command(label = "View data", command = lambda:VANTAGE_FUNCTIONS.Menu_functions_CHEATSHEETS.view_data(self,IMU_dat)) #Video Squash
 
 
         #Assign the menus to the main window
@@ -255,29 +262,32 @@ class App(tk.Tk):
 
 
         #Buttons
-        btn_prev = tk.Button(IMU_dat.control_frame,text = "Previous video",command=lambda:Button_functions.prev_vid(self,IMU_dat))
+        btn_prev = tk.Button(IMU_dat.control_frame,text = "Previous video",command=lambda:VANTAGE_FUNCTIONS.Button_functions.prev_vid(self,IMU_dat))
         btn_prev.grid(column = 0,row=0,padx = 5, pady = 5,sticky = "nesw")
 
-        btn_next = tk.Button(IMU_dat.control_frame,text = "Next video",command=lambda:Button_functions.next_vid(self,IMU_dat))
+        btn_next = tk.Button(IMU_dat.control_frame,text = "Next video",command=lambda:VANTAGE_FUNCTIONS.Button_functions.next_vid(self,IMU_dat))
         # btn_next.place(relx = 0.9,rely = 0)
         btn_next.grid(column = 1,row=0,padx = 5, pady = 5,sticky = "nesw")
 
-        btn_rst = tk.Button(IMU_dat.control_frame,text = "Reset video",command=lambda:Button_functions.rst_video(IMU_dat))
+        btn_rst = tk.Button(IMU_dat.control_frame,text = "Reset video",command=lambda:VANTAGE_FUNCTIONS.Button_functions.rst_video(IMU_dat))
         btn_rst.grid(column = 2,row=0,padx = 50, pady = 5,sticky = "nesw")
+        
+        btn_find_pce = tk.Button(IMU_dat.control_frame,text = "Find PCE",command=lambda:VANTAGE_FUNCTIONS.Button_functions.find_pce(self,IMU_dat))
+        btn_find_pce.grid(column = 2,row=1,padx = 50, pady = 5,sticky = "nesw")
 
-        btn_photo = tk.Button(IMU_dat.control_frame,text = "Save image",command=lambda:Button_functions.save_image(IMU_dat))
+        btn_photo = tk.Button(IMU_dat.control_frame,text = "Save image",command=lambda:VANTAGE_FUNCTIONS.Button_functions.save_image(IMU_dat))
         btn_photo.grid(column = 0,row=1,padx = 5, pady = 5,sticky = "nesw")
 
-        btn_vid = tk.Button(IMU_dat.control_frame,text = "Save video clip",command=lambda:Button_functions.save_vid_clip(IMU_dat))
+        btn_vid = tk.Button(IMU_dat.control_frame,text = "Save video clip",command=lambda:VANTAGE_FUNCTIONS.Button_functions.save_vid_clip(IMU_dat))
         btn_vid.grid(column = 1,row=1,padx = 5, pady = 5,sticky = "nesw")
 
-        # btn_res = tk.Button(IMU_dat.control_frame,text = "Set Resolution",command=lambda:Button_functions.set_res(IMU_dat))
+        # btn_res = tk.Button(IMU_dat.control_frame,text = "Set Resolution",command=lambda:VANTAGE_FUNCTIONS.Button_functions.set_res(IMU_dat))
         # btn_res.grid(column = 0,row=2,padx = 5, pady = 20,sticky = "nesw")
 
-        # btn_update = tk.Button(IMU_dat.control_frame,text = "Update Frame",command=lambda:Button_functions.update_frame(IMU_dat))
+        # btn_update = tk.Button(IMU_dat.control_frame,text = "Update Frame",command=lambda:VANTAGE_FUNCTIONS.Button_functions.update_frame(IMU_dat))
         # btn_update.grid(column = 1,row=2,padx = 5, pady = 20,sticky = "nesw")
 
-        # btn_smooth = tk.Button(IMU_dat.control_frame,text = "Apply smooth",command=lambda:Button_functions.apply_smooth(IMU_dat))
+        # btn_smooth = tk.Button(IMU_dat.control_frame,text = "Apply smooth",command=lambda:VANTAGE_FUNCTIONS.Button_functions.apply_smooth(IMU_dat))
         # btn_smooth.grid(column = 0,row=3,padx = 5, pady = 5,sticky = "nesw")
 
         #Sliders
@@ -306,7 +316,7 @@ class App(tk.Tk):
 ##        c3.place(x = 500,y = 43)
         # c3.place(relx = 0.65,rely = 0.0)
         c3.grid(column = 3,row=2,padx = 5, pady = 5,sticky = "nesw")
-        # tk.Checkbutton(self, text="Normalize?",variable=IMU_dat.norm, onvalue=1, offvalue=0,command =lambda:Button_functions.normalize(IMU_dat) ).place(relx = 0.75,rely = 0.16)
+        # tk.Checkbutton(self, text="Normalize?",variable=IMU_dat.norm, onvalue=1, offvalue=0,command =lambda:VANTAGE_FUNCTIONS.Button_functions.normalize(IMU_dat) ).place(relx = 0.75,rely = 0.16)
 
 
 
