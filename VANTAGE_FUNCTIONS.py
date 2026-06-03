@@ -263,7 +263,7 @@ class Menu_functions_FILE(Data_Frame):
 
             #Get the sampling frequency of the data
             date_diffs = dat.df[dat.time_col_string].diff()
-            dat.frequency = int(round(1/(date_diffs).mean().total_seconds(),0))
+            dat.frequency = int(round(1/(date_diffs).median().total_seconds(),0))
             print("Sampling rate is: " + str(dat.frequency))
 
             #############################
