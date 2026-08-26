@@ -1571,6 +1571,17 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
         #Automatic detection of dives
          print("Finding dives...")
+         
+         #Added for AX loggers where depth is actually pressure
+        #We look at the minimum and maximum values of depth - if they are too large, it is pressure 
+         if(min(dat.df.loc[:,dat.depth_col_string]) > 900 and max(dat.df.loc[:,dat.depth_col_string]) > 2000):
+            depth = dat.df.loc[:,dat.depth_col_string].values
+            offset = np.median(depth[depth < 1300])
+            Depth = (depth - offset) / 100        
+            dat.df["Depth"] = Depth
+            dat.depth_col_string = "Depth"
+            dat.depth_col = dat.df.columns.get_loc("Depth")
+            print("Converted pressure to depth")
 
          if('DIVE' in dat.df):
              dat.dive_num = dat.df["DIVE"].max()
