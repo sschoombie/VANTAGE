@@ -119,10 +119,10 @@ class Menu_functions_FILE(Data_Frame):
                         
             dat.nrow = np.array(dat.df).shape[0]
 
-            if(dat.current_label_col in dat.df):
-                pass
-            else:
-                dat.df[dat.current_label_col] = 0
+            # if(dat.current_label_col in dat.df):
+                # pass
+            # else:
+                # dat.df[dat.current_label_col] = 0
 
             wtemp.destroy() #Remove the prompt window
 
@@ -213,36 +213,58 @@ class Menu_functions_FILE(Data_Frame):
             pre,ext = os.path.splitext(dat.filename)
             out_file = pre + "_OUT.csv"
 
-            #Create the OUT file headings
-            dat.df["vid"] = "NA"
-            dat.df["frame"] = "NA"
-            dat.df["vid_time"] = "NA"
-            dat.df["cfilter"] = 0
-            if('BEHAV' in dat.df):
-                pass
-            else:
-                dat.df['BEHAV'] = 0
+            # #Create the OUT file headings
+            # dat.df["vid"] = "NA"
+            # dat.df["frame"] = "NA"
+            # dat.df["vid_time"] = "NA"
+            # dat.df["cfilter"] = 0
+            # if('BEHAV' in dat.df):
+                # pass
+            # else:
+                # dat.df['BEHAV'] = 0
 
             #Check if the file exists
             if os.path.exists(out_file):
                 temp_df = pd.read_csv(out_file,low_memory=False)
+                
+                #Find label col names
+                standard_cols = ["vid", "frame", "vid_time", "cfilter", "BEHAV"]
+                dat.all_label_col = [col for col in temp_df.columns if col not in standard_cols]
+                
                 # dat.df = dat.df.join(temp_df)
-                dat.df.iloc[:,dat.df.columns.get_loc(dat.current_label_col)] = temp_df.iloc[:,temp_df.columns.get_loc(dat.current_label_col)]
-
-                dat.df.iloc[:,dat.df.columns.get_loc("vid")] = temp_df.iloc[:,temp_df.columns.get_loc("vid")]
-
-                dat.df.iloc[:,dat.df.columns.get_loc("frame")] = temp_df.iloc[:,temp_df.columns.get_loc("frame")]
-
-                dat.df.iloc[:,dat.df.columns.get_loc("vid_time")] = temp_df.iloc[:,temp_df.columns.get_loc("vid_time")]
-
-                if('BEHAV' in temp_df):
-                    dat.df.iloc[:,dat.df.columns.get_loc("BEHAV")] = temp_df.iloc[:,temp_df.columns.get_loc("BEHAV")]
+                 # Only update columns in dat.df that are in temp_df but not already in dat.df
+                cols_to_update = [col for col in temp_df.columns if col not in dat.df.columns]
+               
+                # Update only the non-conflicting columns
+                dat.df[cols_to_update] = temp_df[cols_to_update]
+                
                 dat.out_file_loaded = True
                 try:
                     dat.btn_2['state'] = 'disabled' #Cheatsheet button disable
                 except:
                     pass
                 print("OUT file loaded")
+                print(cols_to_update)
+            else:
+                # Ensure label column exists
+                print(dat.df.columns)
+                if dat.current_label_col not in dat.df.columns:
+                    print("creating new PCE column: " + dat.current_label_col)
+                    dat.df[dat.current_label_col] = 0
+
+                # Columns that should exist with default values
+                default_cols = {
+                    "vid": "NA",
+                    "frame": "NA",
+                    "vid_time": "NA",
+                    "cfilter": 0,
+                    "BEHAV": 0
+                }
+
+                for col, default_val in default_cols.items():
+                    if col not in dat.df.columns:
+                        dat.df[col] = default_val
+
 
             ###############
             # 2- DIVES file #
@@ -2650,7 +2672,7 @@ class Menu_functions_EXPORT(Data_Frame):
         pre,ext = os.path.splitext(dat.filename)
         out_file = pre + "_OUT.csv"
         dat.df[dat.current_label_col] = pd.to_numeric(dat.df[dat.current_label_col],errors='coerce')
-        pce_out = dat.df[[dat.current_label_col,"vid","frame","vid_time","BEHAV"]]
+        pce_out = dat.df[dat.all_label_col + ["vid","frame","vid_time","BEHAV"]]
 
         #Create a new window to show a prompt to wait
         #New temp window
@@ -3241,8 +3263,49 @@ class Menu_functions_EXPORT(Data_Frame):
 
 class Menu_functions_ANNOTATE(Data_Frame):
     def choose_annotation_col(self,dat):
-    #Create a new column for annotations or select a previously created column
-        pass
+        wtemp = tk.Toplevel(self)
+        wtemp.title("Please select the Annotation column")
+        wtemp.geometry("600x400")
+        wtemp.attributes('-topmost',True)
+        tk.Label(wtemp, text="New column name:").pack(padx=10, pady=5)
+        entry = tk.Entry(wtemp)
+        entry.pack(padx=10, pady=5)
+        
+            
+        #Function when the "Apply button is pressed"
+        #Once the column name and format has been chosen we convert the column to POSIX
+        def tapply():
+            if not hasattr(dat, "all_label_col"):
+                dat.all_label_col = ["PCE"]
+                
+            col_name = entry.get().strip()
+
+            if not col_name:
+                tk.messagebox.showwarning("Invalid", "Column name cannot be empty")
+                return
+
+            if col_name in dat.df.columns:
+                tk.messagebox.showwarning("Exists", f"Column '{col_name}' already exists")
+                dat.current_label_col = col_name
+                if col_name not in dat.all_label_col:
+                    dat.all_label_col.append(col_name)
+                    print("New label column: " + str(col_name) + " added")
+                print(dat.all_label_col)
+                #win.destroy()
+                #return
+            else:
+                # Create new column with default value 0
+                if col_name not in dat.all_label_col:
+                    dat.all_label_col.append(col_name)
+                    print("New label column: " + str(col_name) + " added")
+                    print(dat.all_label_col)
+                dat.current_label_col = col_name
+                dat.df[dat.current_label_col] = 0
+                
+            wtemp.destroy()
+
+        #Create the button and add the
+        tk.Button(wtemp, text="Apply", command=tapply).pack(pady=10)
 
     def selection_warning(self,dat):
         #Check which option is chosen from the menu and print the approriate warning
