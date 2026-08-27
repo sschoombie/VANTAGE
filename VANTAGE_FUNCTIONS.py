@@ -225,7 +225,7 @@ class Menu_functions_FILE(Data_Frame):
 
             #Check if the file exists
             if os.path.exists(out_file):
-                temp_df = pd.read_csv(out_file)
+                temp_df = pd.read_csv(out_file,low_memory=False)
                 # dat.df = dat.df.join(temp_df)
                 dat.df.iloc[:,dat.df.columns.get_loc(dat.current_label_col)] = temp_df.iloc[:,temp_df.columns.get_loc(dat.current_label_col)]
 
@@ -251,7 +251,7 @@ class Menu_functions_FILE(Data_Frame):
             dives_file = pre + "_DIVES.csv"
             #Check if the file exists
             if os.path.exists(dives_file):
-                temp_df = pd.read_csv(dives_file)
+                temp_df = pd.read_csv(dives_file,low_memory=False)
                 dat.df = dat.df.join(temp_df)
                 print("DIVES file loaded")
 
@@ -262,7 +262,7 @@ class Menu_functions_FILE(Data_Frame):
             yolo_file = pre + "_YOLO.csv"
             #Check if the file exists
             if os.path.exists(yolo_file):
-                temp_df = pd.read_csv(yolo_file)
+                temp_df = pd.read_csv(yolo_file,low_memory=False)
                 dat.df = dat.df.join(temp_df)
                 print("YOLO file loaded")
 
@@ -635,7 +635,7 @@ class Menu_functions_VIDEO(Data_Frame):
                     dat.vid_idx_start = (np.abs(dat.df.iloc[:,dat.time_col] - dat.vid_start_date)).argmin()
                     dat.sub_min = dat.vid_idx_start
                     dat.vid_idx_end = dat.vid_idx_start + int((dat.frame_count/dat.fps)*dat.frequency)
-
+                    print(dat.sub_min)
                     #DEBUG trying something with the squash file
                     #Split the colour image into channels (blue, green, red)
                     try:
@@ -1601,7 +1601,7 @@ class Menu_functions_ANALYSIS(Data_Frame):
 
          if os.path.exists(out_file):
              print("Dives already done")
-             dives = pd.read_csv(out_file)
+             dives = pd.read_csv(out_file,low_memory=False)
              dat.df = dat.df.join(dives)
             #Normalize acc data
 
@@ -2168,7 +2168,8 @@ class Menu_functions_ANALYSIS(Data_Frame):
                     print(dat.vid_start_date - dat.video_offset)
                     dat.vt["video_offset"][vid_match] = dat.video_offset.total_seconds()
                     print(dat.video_offset.total_seconds())
-                    dat.vt["set"][vid_match] = 1
+                    #dat.vt["set"][vid_match] = 1 #deprecated
+                    dat.vt.loc[vid_match, "set"] = 1
 
                     vt = dat.vt
                     if dat.view_only == False:
@@ -4382,7 +4383,8 @@ class Button_functions(Data_Frame):
             # print(dat.vid_start_date - dat.video_offset)
             dat.vt["video_offset"][vid_match] = dat.video_offset.total_seconds()
             # print(dat.video_offset.total_seconds())
-            dat.vt["set"][vid_match] = 1
+            #dat.vt["set"][vid_match] = 1 #deprecated
+            dat.vt.loc[vid_match, "set"] = 1
 
             vt = dat.vt
             if dat.view_only == False:
@@ -4603,9 +4605,15 @@ class Keyboard_functions(Data_Frame):
                 sub_diff = dat.sub_max - dat.sub_min
                 dat.sub_max = dat.sub_max - int(sub_diff/2)
                 dat.sub_min = dat.sub_min - int(sub_diff/2)
-                if dat.sub_max < 0:
+                
+                if dat.sub_max < 100:
                     dat.sub_max = 100
                     dat.sub_min = 0
+                    
+                if dat.sub_min < 0:
+                    dat.sub_min = 0
+                
+               
                 try:
                     dat.vline2.remove()
                 except:
@@ -4632,7 +4640,9 @@ class Keyboard_functions(Data_Frame):
                 #     dat.zoom_int = 1000
                 # else:
                 #     dat.zoom_int = 1
-
+                
+               
+                
                 dat.ax_zoom.cla() #Clear axes
                 # Extracting the data for zoom plot
                 #Specificy the rows to plot
