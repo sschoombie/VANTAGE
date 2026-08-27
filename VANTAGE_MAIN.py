@@ -21,7 +21,7 @@ from Data_Frame import Data_Frame, DebugWindow
 from VANTAGE_FUNCTIONS import *#Menu_functions, Menu_functions_FILE
 
 #Version number
-vnum = "_1.02"
+vnum = "_1.03"
 
 class App(tk.Tk):
     def __init__(self):
